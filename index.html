@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="tests/fixtures/ContainerElement.js" type="module"></script>
+    <script type="module">
+        import {fetch_get_json} from "./src/Fetch.js";
+        import global_store from "./src/GlobalStore.js";
+
+        global_store.set_base_url('api/v1');
+
+        const locations = global_store.get('container/locations');
+
+        const store = global_store.get('container').store.state['locations'];
+        console.log(store.store.get_object_url());
+
+        window.on_click = () => {
+            locations[0].description = 'High Quality Motors';
+            locations[1].description = 'Luxury Automobiles';
+            global_store.action('update', 'container/locations/Wandsworth', {description: 'Higher Quality Motors'});
+        }
+    </script>
+</head>
+<body>
+<button onclick="on_click()">Upgrade</button>
+<k-container-element></k-container-element>
+
+</body>
+</html>
