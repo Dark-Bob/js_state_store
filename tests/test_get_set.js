@@ -39,18 +39,18 @@ const tests = {
         assert(store.get('locations/Wandsworth/cars/0/brand') === 'Mazda');
         store.get('locations/Wandsworth/cars/0/').brand = 'Toyota';
         assert(store.get('locations/Wandsworth/cars/0').brand === 'Toyota');
-        store.set('locations/Wandsworth/cars/0', new Car(0, 'Mazda', "Hatchback"));
+        store.set('locations/Wandsworth/cars/0', new Car(0, 'Mazda', "Hatchback", 11_000, 'locations/Wandsworth/cars/0'));
         assert(store.get('locations/Wandsworth/cars/0/').brand === 'Mazda');
 
         store.set('locations/Wandsworth/cars/0/engine/type', '2.0L 4-cylinder');
         assert(store.get('locations/Wandsworth/cars/0/engine/type') === '2.0L 4-cylinder');
         store.get('locations/Wandsworth/cars/0/engine').type = '1.5L 4-cylinder';
         assert(store.get('locations/Wandsworth/cars/0/engine/type') === '1.5L 4-cylinder');
-        store.set('locations/Wandsworth/cars/0/engine/', new Engine('3.0L 6-cylinder', store.get('locations/Wandsworth/cars/0').store));
+        store.set('locations/Wandsworth/cars/0/engine/', new Engine('3.0L 6-cylinder', 'locations/Wandsworth/cars/0/engine/'));
         assert(store.get('locations/Wandsworth/cars/0/engine/type') === '3.0L 6-cylinder');
 
         const wandsworth = store.get('locations/Wandsworth');
-        store.set('locations/Wandsworth/cars/', [new Car(3, 'Mercedes', "E-Class", wandsworth.store), new Car(4, "Hyundai", "Ionic", wandsworth.store)]);
+        store.set('locations/Wandsworth/cars/', [new Car(3, 'Mercedes', "E-Class", 11_000, 'locations/Wandsworth/cars/3'), new Car(4, "Hyundai", "Ionic", 11_000, 'locations/Wandsworth/cars/4')]);
         try {
             store.get('locations/Wandsworth/cars/0/brand');
             assert(false, "Should not have passed previous test");
@@ -62,7 +62,7 @@ const tests = {
             }
         }
         assert(store.get('locations/Wandsworth/cars/3/brand') === 'Mercedes');
-        wandsworth.cars = [new Car(5, 'Ferrari', "F40", wandsworth.store)]
+        wandsworth.cars = [new Car(5, 'Ferrari', "F40", 11_000, 'locations/Wandsworth/cars/5')]
         assert(store.get('locations/Wandsworth/cars/5/brand') === 'Ferrari');
         try {
             store.get('locations/Wandsworth/cars/3/brand');
@@ -77,7 +77,7 @@ const tests = {
         }
         const cars = store.get('locations/Wandsworth/cars');
         assert(cars.length === 1);
-        wandsworth.cars[6] = new Car(6, 'Kia', "Sportage", wandsworth.store);
+        wandsworth.cars[6] = new Car(6, 'Kia', "Sportage", 11_000, 'locations/Wandsworth/cars/6');
         assert(store.get('locations/Wandsworth/cars/6/brand') === 'Kia');
     }
 }

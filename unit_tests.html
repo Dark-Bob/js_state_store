@@ -5,6 +5,7 @@
     <title>Unit Tests</title>
     <script type="module">
         import test_get_set from "./tests/test_get_set.js";
+        import test_get_set_json from "./tests/test_get_set_json.js";
         import test_subscriptions from "./tests/test_subscriptions.js";
         import test_actions from "./tests/test_actions.js"
         import test_simple_variable from "./tests/test_simple_variable.js"
@@ -12,9 +13,9 @@
         import test_api_subscription_manager from "./tests/test_api_subscription_manager.js"
 
         async function run_tests() {
-            // const test_sets = [test_get_set, test_subscriptions, test_actions, test_simple_variable, test_reordering,
-            //     test_api_subscription_manager];
-            const test_sets = [test_get_set];
+            // const test_sets = [test_get_set, test_get_set_json, test_subscriptions, test_actions, test_simple_variable,,
+            //     test_reordering, test_api_subscription_manager];
+            const test_sets = [test_get_set_json];
             for (const tests of test_sets) {
                 for (const [name, test_function] of Object.entries(tests)) {
                     console.log(`Testing [${name}]`)

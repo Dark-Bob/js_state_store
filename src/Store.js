@@ -1,15 +1,16 @@
-import {StoreMap, StoreState} from "./StoreState.js";
-import StoreArrayProxy from "./StoreArrayProxy.js";
+import {StoreMap, StoreState, StoreArrayProxy} from "./StoreState.js";
+import global_store from "./GlobalStore.js";
 
 export default class Store extends StoreState {
-    constructor({object, object_name, parent_store=null, actions = {}, is_part_of_url= true}) {
-        super(object_name, parent_store, is_part_of_url);
-        this.object = object;
+    constructor({object, path, actions = {}, is_part_of_url= true}) {
+        super(path, is_part_of_url, object);
         this.actions = actions;
         this.id_property_name = null;
     }
 
     set_id(id_property_name, value, query_string=null) {
+        if (value.toString() !== this.object_name)
+            throw new Error(`Object id [${value}] is different to the path [${this.object_name}]`)
         this._set_member(this.object, id_property_name, value, query_string);
         this.id_property_name = id_property_name;
     }
@@ -19,12 +20,11 @@ export default class Store extends StoreState {
     }
 
     get_object_path() {
-        if (this.parent_store != null)
-            return `${this.parent_store.get_object_path()}/${this.object_name}/${this.get_id()}`;
-        return `${this.object_name}/${this.get_id()}`;
+        return this.path;
     }
 
     get_object_url() {
+        global_store._reconcile_stores();
         const parent_url = this.parent_store.get_object_url();
         if (!this.is_part_of_url)
             return parent_url;
@@ -41,10 +41,10 @@ export default class Store extends StoreState {
         this._set_object_map(this.object, property_name, value, query_string, actions, on_change_callback);
     }
 
-    set_member_array(property_name, array, query_string=null, on_change_callback=null) {
+    set_member_array(property_name, array, query_string=null, actions={}, on_change_callback=null) {
         if (!Array.isArray(array))
             throw new Error('This function expects an array as the second parameter.');
-        const array_proxy = StoreArrayProxy.create_from_array(array);
+        const array_proxy = StoreArrayProxy.create_from_array(array, null, `${this.path}/${property_name}`, property_name, actions);
         if (on_change_callback != null)
             array_proxy.subscribe(on_change_callback)
         this._set_member(this.object, property_name, array_proxy, query_string, {}, on_change_callback, StoreArrayProxy.create_from_array);

@@ -10,8 +10,8 @@ export default function populate_store() {
     global_store.clear();
 
     const locations = [
-        new Location('Wandsworth', 'Cheap cars'),
-        new Location('Croydon', 'Bare dealz')
+        new Location('Wandsworth', 'Cheap cars', 'locations/Wandsworth'),
+        new Location('Croydon', 'Bare dealz', 'locations/Croydon')
     ];
     global_store.set_object_map('locations', locations, null, create_api_actions_map(Location));
 

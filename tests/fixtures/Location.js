@@ -15,18 +15,19 @@ template.innerHTML = `
 
 export default class Location extends HTMLElement {
 
-    static create_from_json(object_json, parent_store) {
-        return new Location(object_json.location, object_json.description, parent_store);
+    static id_member_name = 'location';
+    static create_from_json(object_json, store_path) {
+        return new Location(object_json.location, object_json.description, store_path);
     }
 
-    constructor(location, description, parent_store=null) {
+    constructor(location, description, store_path) {
         super();
-        this.store = new Store({object: this, object_name: 'locations', parent_store: parent_store, actions: api_actions_object});
-        this.store.set_id('location', location, '#title');
+        this.store = new Store({object: this, path: store_path, actions: api_actions_object});
+        this.store.set_id(Location.id_member_name, location, '#title');
         this.store.set_member('description', description, '.description');
         this.store.set_member_map('cars', [
-            new Car(0, 'Ferrari', 'F40', 80_000, this.store),
-            new Car(1, 'Lamborghini', 'Diablo', 100_000, this.store)
+            new Car(0, 'Ferrari', 'F40', 80_000, `${store_path}/cars/0`),
+            new Car(1, 'Lamborghini', 'Diablo', 100_000, `${store_path}/cars/1`)
         ], 'slot[name=cars]', create_api_actions_map(Car, this.store));
         console.log(`Location: ${this.location}, ${this.description}`);
     }

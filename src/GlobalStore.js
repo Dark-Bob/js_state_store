@@ -1,120 +1,97 @@
 import {StoreState, is_store_object} from "./StoreState.js";
 
-class GlobalStore {
+
+class GlobalStore extends StoreState {
     constructor() {
-        this.store_map = {};
-        this.base_url = ''
+        super('');
+        this.base_url = '';
+        this.awaiting_parent_store = {};
     }
 
     _register_store(property_name, store) {
-        // We need directly set and registered store to behave the same way, we create a Store, so we always pass the whole path
-        this.store_map[property_name] = new StoreState(property_name, this, false);
-        this.store_map[property_name].set(property_name, {store: store});
+        if (!(property_name in this.state))
+            this.set(property_name,  store.object);
     }
 
     clear() {
-        for (const property_name of Object.keys(this.store_map))
-            delete this.store_map[property_name];
-    }
-
-    get_object_path() {
-        return '';
+        for (const property_name of Object.keys(this.state))
+            delete this.state[property_name];
     }
 
     get_object_url() {
         return this.base_url;
     }
 
-    get(path) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map))
-            return null;
-        return this.store_map[path_parts[0]].get(path);
+    get(path, throw_not_found=true, reconcile_stores=true, raw_object=false) {
+        if (reconcile_stores)
+            this._reconcile_stores();
+        return super.get(path, throw_not_found, raw_object);
     }
 
     get_json(path) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map))
-            return null;
-        return this.store_map[path_parts[0]].get_json(path);
+        this._reconcile_stores();
+        return super.get_json(path);
     }
 
     get_url(path) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map))
-            return null;
-        return this.store_map[path_parts[0]].get_url(path);
+        this._reconcile_stores();
+        return super.get_url(path);
     }
 
     set(path, object) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map)) {
-            if (path_parts[1] == null) {
-                this.store_map[path_parts[0]] = new StoreState(path_parts[0], this, false);
-                this.store_map[path_parts[0]].set(path_parts[0], object);
-                return;
-            } else
-                throw new Error(`Could not find [${path_parts[0]}] in path [${path}]`);
-        }
-        return this.store_map[path_parts[0]].set(path, object);
+        this._reconcile_stores();
+        return super.set(path, object);
     }
 
     set_json(path, object_json) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map)) {
-            if (path_parts[1] == null) {
-                this.store_map[path_parts[0]] = new StoreState(path_parts[0], this, false);
-                this.store_map[path_parts[0]].set_json(path_parts[0], object_json);
-                return;
-            } else
-                throw new Error(`Could not find [${path_parts[0]}] in path [${path}]`);
-        }
-        return this.store_map[path_parts[0]].set_json(path, object_json);
-    }
-
-    add(path, object) {
-        if (!is_store_object(object))
-            throw new Error('The add function is reserved for adding objects to object maps')
-        if (path.slice(-1) === '/')
-            this.set(`${path}${object.store.get_id()}`, object);
-        else
-            this.set(`${path}/${object.store.get_id()}`, object);
-    }
-
-    subscribe(path, callback) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map))
-            throw new Error(`Could not find [${path_parts[0]}] in path [${path}]`);
-        return this.store_map[path_parts[0]].subscribe(path, callback);
-    }
-
-    action(action, path, state) {
-        const path_parts = this._split_path(path);
-        if (!(path_parts[0] in this.store_map))
-            throw new Error(`Could not find [${path_parts[0]}] in path [${path}]`);
-        return this.store_map[path_parts[0]].action(action, path, state);
+        this._reconcile_stores();
+        return super.set_json(path, object_json);
     }
 
     set_object_map(property_name, object_list, query_string=null, actions={}, on_change_callback=null) {
-        this.store_map[property_name] = new StoreState(property_name, this, false);
-        return this.store_map[property_name].set_object_map(property_name, object_list, query_string, actions, on_change_callback);
+        this._reconcile_stores();
+        if (property_name.indexOf('/') === -1)
+            this.state[property_name] = null;
+        return super.set_object_map(property_name, object_list, query_string, actions, on_change_callback);
+    }
+
+    subscribe(path, callback) {
+        this._reconcile_stores();
+        return super.subscribe(path, callback);
+    }
+
+    action(action, path, state) {
+        this._reconcile_stores();
+        return super.action(action, path, state);
     }
 
     set_base_url(base_url) {
         this.base_url = base_url;
     }
 
-    _split_path(path) {
-        // Remove trialing slashes
-        if (path.endsWith('/'))
-            path = path.slice(0, -1);
-        // See if it's made up of more than on section
-        const first_part_index = path.indexOf('/');
-        if (first_part_index === -1)
-            return [path, null];
-        return [path.substring(0, first_part_index), path.substring(first_part_index + 1)];
+    _awaiting_parent_store(path, store) {
+        if (!(path in this.awaiting_parent_store))
+            this.awaiting_parent_store[path] = [];
+        this.awaiting_parent_store[path].push(store);
+    }
+
+    _reconcile_stores() {
+        for (const [path, store_list] of Object.entries(this.awaiting_parent_store)) {
+            const parent = this.get(path, false, false, true);
+            if (parent != null) {
+                for (const store of store_list) {
+                    if (!('store' in parent) || !(parent.store instanceof StoreState)) {
+                        this.get(path, false, false, true);
+                        throw new Error('parent.store must be of type store');
+                    }
+                    store.parent_store = parent.store;
+                }
+                this.awaiting_parent_store[path] = []
+            }
+        }
     }
 }
 
 const global_store = new GlobalStore();
 export default global_store;
+window.global_store = global_store;

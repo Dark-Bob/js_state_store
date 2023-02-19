@@ -17,10 +17,10 @@ export default class ContainerElement extends HTMLElement {
 
     constructor(location, description) {
         super();
-        this.store = new Store({object: this, object_name: 'container', actions: api_actions_object, is_part_of_url: false});
+        this.store = new Store({object: this, path: 'container', actions: api_actions_object, is_part_of_url: false});
         this.store.set_member_map('locations', [
-            new Location('Wandsworth', 'Cheap cars', this.store),
-            new Location('Croydon', 'Bare dealz', this.store)
+            new Location('Wandsworth', 'Cheap cars', 'container/locations/Wandsworth'),
+            new Location('Croydon', 'Bare dealz', 'container/locations/Croydon')
         ], 'slot[name=locations]', create_api_actions_map(Location, this.store))
     }
 

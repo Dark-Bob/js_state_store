@@ -7,9 +7,9 @@ template.innerHTML = `
 `
 
 export default class Engine extends HTMLElement {
-    constructor(type, parent_store) {
+    constructor(type, store_path) {
         super();
-        this.store = new Store({object: this, object_name: 'engine', parent_store: parent_store, actions: api_actions_object});
+        this.store = new Store({object: this, path: store_path, actions: api_actions_object});
         this.store.set_member('type', type, '#type');
     }
 

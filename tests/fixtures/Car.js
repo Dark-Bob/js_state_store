@@ -19,18 +19,19 @@ template.innerHTML = `
 
 export default class Car extends HTMLElement {
 
-    static create_from_json(object_json, parent_store) {
-        return new Location(object_json.id, object_json.brand, object_json.model, object_json.price, parent_store);
+    static id_member_name = 'id';
+    static create_from_json(object_json, store_path) {
+        return new Location(object_json.id, object_json.brand, object_json.model, object_json.price, store_path);
     }
 
-    constructor(id, brand, model, price, parent_store) {
+    constructor(id, brand, model, price, store_path) {
         super();
-        this.store = new Store({object: this, object_name: 'cars', parent_store: parent_store, actions: api_actions_object});
-        this.store.set_id('id', id);
+        this.store = new Store({object: this, path: store_path, actions: api_actions_object});
+        this.store.set_id(Car.id_member_name, id);
         this.store.set_member('brand', brand, '#brand');
         this.store.set_member('model', model, '#model');
         this.store.set_member('price', price, '#price');
-        this.store.set_member('engine', new Engine('twin-turbo V8', this.store), 'slot[name=engine]');
+        this.store.set_member('engine', new Engine('twin-turbo V8', `${store_path}/engine`), 'slot[name=engine]');
         this.store.set_member_array('wheels', [
             new Wheel('front-right'),
             new Wheel('front-left'),

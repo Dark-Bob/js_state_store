@@ -103,7 +103,7 @@ const tests = {
         assert(store.get('locations/Wandsworth/cars/0/engine/type') === '2.0L 4-cylinder');
         store.get('locations/Wandsworth/cars/0/engine').type = '1.5L 4-cylinder';
         assert(store.get('locations/Wandsworth/cars/0/engine/type') === '1.5L 4-cylinder');
-        store.set('locations/Wandsworth/cars/0/engine/', new Engine('3.0L 6-cylinder', store.get('locations/Wandsworth/cars/0').store));
+        store.set('locations/Wandsworth/cars/0/engine/', new Engine('3.0L 6-cylinder', 'locations/Wandsworth/cars/0/engine/'));
         assert(store.get('locations/Wandsworth/cars/0/engine/type') === '3.0L 6-cylinder');
         assert(index_type === expected_values_type.length, `Only [${index_type}] tests ran, some subscriptions didn't fire.`);
         assert(index_engine === expected_values_engine.length, `Only [${index_engine}] tests ran, some subscriptions didn't fire.`);
@@ -119,7 +119,7 @@ const tests = {
                 assert(new_value instanceof Location);
         });
 
-        store.set('locations/Knightsbridge', new Location('Knightsbridge', 'Bangers for sale'));
+        store.set('locations/Knightsbridge', new Location('Knightsbridge', 'Bangers for sale', 'locations/Knightsbridge'));
 
         const expected_values = [
             {
@@ -166,13 +166,13 @@ const tests = {
         });
 
         const knightsbridge = store.get('locations/Knightsbridge');
-        knightsbridge.cars[2] = new Car(2, 'Toyota', 'Camri', 10_000, knightsbridge.store);
+        knightsbridge.cars[2] = new Car(2, 'Toyota', 'Camri', 10_000, 'locations/Knightsbridge/cars/2');
         assert(knightsbridge.cars.length === 3);
         delete knightsbridge.cars[0];
         assert(knightsbridge.cars.length === 2);
-        knightsbridge.cars[2] = new Car(2, 'Mazda', 'Mx5', 10_000, knightsbridge.store);
+        knightsbridge.cars[2] = new Car(2, 'Mazda', 'Mx5', 10_000, 'locations/Knightsbridge/cars/2');
         assert(knightsbridge.cars.length === 2);
-        knightsbridge.cars = [new Car(4, 'Kia', 'Sportage', 10_000, knightsbridge.store)];
+        knightsbridge.cars = [new Car(4, 'Kia', 'Sportage', 10_000, 'locations/Knightsbridge/cars/4')];
         assert(index === expected_values.length, `Only [${index}] tests ran, some subscriptions didn't fire.`);
     },
 

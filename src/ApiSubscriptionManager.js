@@ -58,7 +58,7 @@ function update_state(new_json, old_json, path) {
     // Handle objects
     if (Object.keys(new_item).length !== Object.keys(old_item).length) {
         are_same = false;
-        break;
+        return;
     }
 
     for (const [key, value] of Object.entries(old_item)) {

@@ -44,8 +44,8 @@ const tests = {
                 index_location += 1;
         });
 
-        global_store.add('locations', new Location('Zanzibar', 'Fantastic Motors'));
-        global_store.add('locations/', new Location('Azerbaijan', 'Wonderful Vehicles'));
+        global_store.set('locations/Zanzibar', new Location('Zanzibar', 'Fantastic Motors', 'locations/Zanzibar'));
+        global_store.set('locations/Azerbaijan/', new Location('Azerbaijan', 'Wonderful Vehicles', 'locations/Azerbaijan/'));
 
         let index = 0;
         global_store.subscribe(
