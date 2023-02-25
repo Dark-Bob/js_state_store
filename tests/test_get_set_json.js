@@ -17,16 +17,15 @@ const tests = {
         assert(global_store.get('locations/Wandsworth/cars/0/brand') === 'Mazda');
         global_store.set_json('locations/Wandsworth/cars/0', {id: 0, brand: 'Mazda', model: "Hatchback"});
         assert(global_store.get('locations/Wandsworth/cars/0/').brand === 'Mazda');
+        global_store.set_json('locations/Wandsworth/cars/9', {id: 9, brand: 'Ford', model: "Escort"}, Car.create_from_json);
+        assert(global_store.get('locations/Wandsworth/cars/9/').brand === 'Ford');
 
-        global_store.set('locations/Wandsworth/cars/0/engine/type', '2.0L 4-cylinder');
+        global_store.set_json('locations/Wandsworth/cars/0/engine/type', '2.0L 4-cylinder');
         assert(global_store.get('locations/Wandsworth/cars/0/engine/type') === '2.0L 4-cylinder');
-        global_store.get('locations/Wandsworth/cars/0/engine').type = '1.5L 4-cylinder';
-        assert(global_store.get('locations/Wandsworth/cars/0/engine/type') === '1.5L 4-cylinder');
-        global_store.set('locations/Wandsworth/cars/0/engine/', new Engine('3.0L 6-cylinder', global_store.get('locations/Wandsworth/cars/0').store));
+        global_store.set_json('locations/Wandsworth/cars/0/engine/', {type: '3.0L 6-cylinder'});
         assert(global_store.get('locations/Wandsworth/cars/0/engine/type') === '3.0L 6-cylinder');
 
-        const wandsworth = global_store.get('locations/Wandsworth');
-        global_store.set('locations/Wandsworth/cars/', [new Car(3, 'Mercedes', "E-Class", wandsworth.store), new Car(4, "Hyundai", "Ionic", wandsworth.store)]);
+        global_store.set_json('locations/Wandsworth/cars/', [{id: 3, brand: 'Mercedes', model: "E-Class", price: 11_000}, {id: 4, brand: "Hyundai", model: "Ionic", price: 11_000}], Car.create_from_json);
         try {
             global_store.get('locations/Wandsworth/cars/0/brand');
             assert(false, "Should not have passed previous test");
@@ -37,24 +36,11 @@ const tests = {
                 throw e;
             }
         }
-        assert(global_store.get('locations/Wandsworth/cars/3/brand') === 'Mercedes');
-        wandsworth.cars = [new Car(5, 'Ferrari', "F40", wandsworth.store)]
-        assert(global_store.get('locations/Wandsworth/cars/5/brand') === 'Ferrari');
-        try {
-            global_store.get('locations/Wandsworth/cars/3/brand');
-            assert(false, "Should not have passed previous test");
-        }
-        catch (e) {
-
-            if (e.message !== 'Path part [cars/3/brand] is not valid') {
-                console.error(e);
-                throw e;
-            }
-        }
-        const cars = global_store.get('locations/Wandsworth/cars');
-        assert(cars.length === 1);
-        wandsworth.cars[6] = new Car(6, 'Kia', "Sportage", wandsworth.store);
-        assert(global_store.get('locations/Wandsworth/cars/6/brand') === 'Kia');
+        assert(global_store.get('locations/Wandsworth/cars').length);
+        global_store.set_json('locations/Wandsworth/cars/', [{id: 5, brand: 'Fiat', model: "Panda", price: 11_000, engine: {type: 'twin-prop'}}], Car.create_from_json);
+        assert(global_store.get('locations/Wandsworth/cars/5/engine/type') === 'twin-prop');
+        global_store.set_json('locations/Wandsworth/cars/5', {id: 5, brand: 'Fiat', model: "Panda", price: 11_000, engine: {type: 'horse-drawn'}});
+        assert(global_store.get('locations/Wandsworth/cars/5/engine/type') === 'horse-drawn');
     }
 }
 

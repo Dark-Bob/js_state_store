@@ -10,24 +10,11 @@ export class StoreMap {
     values() {
         return Object.values(this);
     }
-
-    to_json() {
-        const array = [];
-        for (const [key, value] of Object.entries(this)) {
-            if (typeof value === 'object' && 'to_json' in value)
-                array.push(value.to_json());
-            else if (is_store_object(value))
-                array.push(value.store.to_json());
-            else
-                array.push(value);
-        }
-
-        return array;
-    }
 }
 
 class StoreMapProxy {
 
+    static proxy_properties = ['subscribe', 'subscriptions', 'action', 'actions', 'store', 'to_json', 'update_from_json'];
     static create_from_object(object, path, actions={}) {
         const proxy_handler = new StoreMapProxy(object, path, actions);
         const proxy = new Proxy(object, proxy_handler);
@@ -57,14 +44,14 @@ class StoreMapProxy {
     }
 
     has(target, property_name) {
-        if (['subscribe', 'subscriptions', 'action', 'actions', 'store'].includes(property_name))
+        if (StoreMapProxy.proxy_properties.includes(property_name))
             return true;
         return Reflect.has(target, property_name);
     }
 
     get(target, property_name) {
-        if (['subscribe', 'subscriptions', 'action', 'actions', 'store'].includes(property_name))
-            return this[property_name];
+        if (StoreMapProxy.proxy_properties.includes(property_name))
+             return this[property_name];
         if (property_name === 'length')
             return target.values().length;
         return Reflect.get(...arguments);
@@ -108,6 +95,53 @@ class StoreMapProxy {
                 callback(values, property_name, target[property_name], undefined, 'remove');
         }
         return Reflect.deleteProperty(target, property_name);
+    }
+
+    update_from_json(object_json, create_from_json_function) {
+        let id_property_name = null;
+        if (this.length > 0)
+            id_property_name = Object.values(this)[0].store.id_property_name;
+        const object_ids = object_json.map(item => item[id_property_name]);
+        let processed_ids = [];
+        for (const [key, value] of Object.entries(this)) {
+            if (this.length > 0 && !object_ids.includes(value[id_property_name])) {
+                delete this[key];
+                continue;
+            }
+
+            if (is_store_object(value)) {
+                if ('update_from_json' in value)
+                    value.update_from_json(object_json[key], create_from_json_function);
+                else
+                    value.store.update_from_json(object_json[key], create_from_json_function);
+            } else if (object_json[key] !== value)
+                this.set(object_json[key][id_property_name], object_json[key]);
+
+            processed_ids.push(key);
+        }
+
+        for (const object_json_ of object_json) {
+            const id = object_json_[id_property_name];
+            if (processed_ids.includes(id))
+                continue;
+            const object = create_from_json_function(object_json_, `${this.store.get_object_path()}/${id}`);
+            object.store.update_from_json(object_json_, create_from_json_function);
+            this[id] = object;
+        }
+    }
+
+    to_json() {
+        const array = [];
+        for (const [key, value] of Object.entries(this.store.object)) {
+            if (typeof value === 'object' && 'to_json' in value)
+                array.push(value.to_json());
+            else if (typeof value === 'object' && 'store' in value && 'to_json' in value.store)
+                array.push(value.store.to_json());
+            else
+                array.push(value);
+        }
+
+        return array;
     }
 }
 
@@ -258,9 +292,9 @@ export class StoreState {
         if (!(path_parts[0] in this.state))
             return null;
         if (path_parts[1] == null) {
-            if (this.state[path] instanceof StoreMap && !raw_object)
-                return this.state[path].values();
-            return this.state[path];
+            if (this.state[path_parts[0]] instanceof StoreMap && !raw_object)
+                return this.state[path_parts[0]].values();
+            return this.state[path_parts[0]];
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
@@ -293,9 +327,9 @@ export class StoreState {
         if (!(path_parts[0] in this.state))
             return null;
         if (path_parts[1] == null) {
-            if (this.state[path] instanceof StoreMap)
-                return this.state[path].to_json();
-            return this.state[path];
+            if (this.state[path_parts[0]] instanceof StoreMap)
+                return this.state[path_parts[0]].to_json();
+            return this.state[path_parts[0]];
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
@@ -322,9 +356,9 @@ export class StoreState {
         if (!(path_parts[0] in this.state))
             return null;
         if (path_parts[1] == null) {
-            if (is_store_object(this.state[path]))
-                return this.state[path].store.get_object_url();
-            throw new Error(`Path part [${path}] is not valid object with a store`);
+            if (is_store_object(this.state[path_parts[0]]))
+                return this.state[path_parts[0]].store.get_object_url();
+            throw new Error(`Path part [${path_parts[0]}] is not valid object with a store`);
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
@@ -349,25 +383,25 @@ export class StoreState {
     set(path, object) {
         const path_parts = this._split_path(path);
         if (path_parts[1] == null) {
-            if (this.state[path] instanceof StoreMap) {
-                if (this.object_subscriptions.length > 0 || this.property_subscriptions[path].length > 0) {
-                    const transformed_current_value = this.state[path].values();
+            if (this.state[path_parts[0]] instanceof StoreMap) {
+                if (this.object_subscriptions.length > 0 || this.property_subscriptions[path_parts[0]].length > 0) {
+                    const transformed_current_value = this.state[path_parts[0]].values();
                     for (const callback of this.object_subscriptions)
-                        callback(this, path, transformed_current_value, object, 'change')
-                    for (const callback of this.property_subscriptions[path])
-                        callback(this, path, transformed_current_value, object, 'change')
+                        callback(this, path_parts[0], transformed_current_value, object, 'change')
+                    for (const callback of this.property_subscriptions[path_parts[0]])
+                        callback(this, path_parts[0], transformed_current_value, object, 'change')
                 }
-                this.state[path] = this._create_object_map(object, this.state[path], `${this.path}/${path}`, path, this.actions[path]);
+                this.state[path_parts[0]] = this._create_object_map(object, this.state[path_parts[0]], `${this.path}/${path_parts[0]}`, path_parts[0], this.actions[path_parts[0]]);
                 if ('_update_dom' in this)
-                    this._update_dom(path);
-                return this.state[path];
+                    this._update_dom(path_parts[0]);
+                return this.state[path_parts[0]];
             }
             else if (Array.isArray(object) && object.length > 0 && is_store_object(object))
-                return this.set_object_map(path, object, this.dom_mapping[path], this.state[path].actions);
+                return this.set_object_map(path_parts[0], object, this.dom_mapping[path_parts[0]], this.state[path_parts[0]].actions);
             // Make sure we can trigger subscriptions. Alternatively could just loop through the subscriptions
             if ('object' in this && this.object != null)
-                return this.object[path] = object;
-            return this.state[path] = object;
+                return this.object[path_parts[0]] = object;
+            return this.state[path_parts[0]] = object;
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
@@ -387,42 +421,39 @@ export class StoreState {
         throw new Error(`Path part [${path}] is not valid`);
     }
 
-    set_json(path, object_json) {
-                const path_parts = this._split_path(path);
+    set_json(path, object_json, create_from_json_function=null) {
+        const path_parts = this._split_path(path);
         if (path_parts[1] == null) {
-            if (this.state[path] instanceof StoreMap) {
-                if (this.object_subscriptions.length > 0 || this.property_subscriptions[path].length > 0) {
-                    const transformed_current_value = this.state[path].values();
-                    for (const callback of this.object_subscriptions)
-                        callback(this, path, transformed_current_value, object_json, 'change')
-                    for (const callback of this.property_subscriptions[path])
-                        callback(this, path, transformed_current_value, object_json, 'change')
-                }
-                this.state[path] = this._create_object_map(object_json, this.state[path], this, path, this.actions[path]);
-                if ('_update_dom' in this)
-                    this._update_dom(path);
-                return this.state[path];
+            if (typeof object_json !== "object") {
+                // Make sure we can trigger subscriptions. Alternatively could just loop through the subscriptions
+                if ('object' in this && this.object != null)
+                    return this.object[path_parts[0]] = object_json;
+                return this.state[path_parts[0]] = object_json;
             }
-            else if (Array.isArray(object_json) && object.length > 0 && is_store_object(object_json))
-                return this.set_object_map(path, object_json, this.dom_mapping[path], this.state[path].actions);
-            // Make sure we can trigger subscriptions. Alternatively could just loop through the subscriptions
-            if ('object' in this && this.object != null)
-                return this.object[path] = object_json;
-            return this.state[path] = object_json;
+            if ('update_from_json' in this.state[path_parts[0]])
+                return this.state[path_parts[0]].update_from_json(object_json, create_from_json_function);
+            return this.object[path_parts[0]].store.update_from_json(object_json, create_from_json_function);
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
             const next_path_parts = this._split_path(path_parts[1]);
             if (next_path_parts[1] == null) {
-                return this.state[path_parts[0]][next_path_parts[0]] = object_json;
+                if (!(next_path_parts[0] in this.state[path_parts[0]])) {
+                    if (create_from_json_function == null)
+                        throw new Error(`This object [${path}] does not exist but no create_from_json_function function was passed in for [${object_json}]`);
+                    const object = create_from_json_function(object_json, `${this.get_object_path()}/${path}`);
+                    return this.state[path_parts[0]].store.set(next_path_parts[0], object);
+                } else if ('update_from_json' in this.state[path_parts[0]][next_path_parts[0]])
+                    return this.state[path_parts[0]][next_path_parts[0]].update_from_json(object_json, create_from_json_function);
+                return this.state[path_parts[0]][next_path_parts[0]].store.update_from_json(object_json, create_from_json_function);
             }
             else {
                 if (next_path_parts[0] in this.state[path_parts[0]])
-                    return this.state[path_parts[0]][next_path_parts[0]].store.set_json(next_path_parts[1], object_json);
+                    return this.state[path_parts[0]][next_path_parts[0]].store.set_json(next_path_parts[1], object_json, create_from_json_function);
             }
         }
         else if ('store' in this.state[path_parts[0]] && this.state[path_parts[0]].store instanceof StoreState) {
-            return this.state[path_parts[0]].store.set_json(path_parts[1], object_json);
+            return this.state[path_parts[0]].store.set_json(path_parts[1], object_json, create_from_json_function);
         }
 
         throw new Error(`Path part [${path}] is not valid`);
@@ -473,14 +504,9 @@ export class StoreState {
             throw new Error("Expected an array of objects");
 
         const object_map = StoreMapProxy.create_from_object(new StoreMap(), path, actions);
-        // let object_name = null;
         for (const object of object_list) {
             if (!is_store_object(object))
                 throw new Error("While an array of objects has been passed in, at least one object does not have a store property of type Store");
-            // if (object_name == null)
-            //     object_name = object.store.object_name;
-            // if (object_name !== object.store.object_name)
-            //     throw new Error("All items in the list of objects must have the same object name");
             object_map[object.store.get_id()] = object;
         }
         if (current_object_map != null)
@@ -587,5 +613,20 @@ export class StoreState {
         }
 
         return json;
+    }
+
+    update_from_json(object_json, create_from_json_function) {
+        for (const [key, value] of Object.entries(this.state)) {
+            if (!(key in object_json))
+                continue;
+
+            if (is_store_object(value)) {
+                if ('update_from_json' in value)
+                    value.update_from_json(object_json[key], create_from_json_function);
+                else
+                    value.store.update_from_json(object_json[key], create_from_json_function);
+            } else if (object_json[key] !== value)
+                this.set(key, object_json[key]);
+        }
     }
 }

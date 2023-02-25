@@ -43,9 +43,9 @@ class GlobalStore extends StoreState {
         return super.set(path, object);
     }
 
-    set_json(path, object_json) {
+    set_json(path, object_json, create_from_json_function=null) {
         this._reconcile_stores();
-        return super.set_json(path, object_json);
+        return super.set_json(path, object_json, create_from_json_function);
     }
 
     set_object_map(property_name, object_list, query_string=null, actions={}, on_change_callback=null) {

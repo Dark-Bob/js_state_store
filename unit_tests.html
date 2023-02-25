@@ -13,9 +13,9 @@
         import test_api_subscription_manager from "./tests/test_api_subscription_manager.js"
 
         async function run_tests() {
-            // const test_sets = [test_get_set, test_get_set_json, test_subscriptions, test_actions, test_simple_variable,,
-            //     test_reordering, test_api_subscription_manager];
-            const test_sets = [test_get_set_json];
+            const test_sets = [test_get_set, test_get_set_json, test_subscriptions, test_actions, test_simple_variable,
+                test_reordering, test_api_subscription_manager];
+            // const test_sets = [test_get_set_json];
             for (const tests of test_sets) {
                 for (const [name, test_function] of Object.entries(tests)) {
                     console.log(`Testing [${name}]`)

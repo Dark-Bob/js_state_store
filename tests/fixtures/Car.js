@@ -21,7 +21,7 @@ export default class Car extends HTMLElement {
 
     static id_member_name = 'id';
     static create_from_json(object_json, store_path) {
-        return new Location(object_json.id, object_json.brand, object_json.model, object_json.price, store_path);
+        return new Car(object_json.id, object_json.brand, object_json.model, object_json.price, store_path);
     }
 
     constructor(id, brand, model, price, store_path) {
