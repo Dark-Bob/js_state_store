@@ -12,15 +12,20 @@ export function set_test_request_data(test_request_data_) {
 export function fetch_get_json(url) {
     console.log(`GET ${url}`);
     return new Promise(function(resolve, reject) {
-        if (test_request_data_index < test_request_data.length) {
-            assert(test_request_data[test_request_data_index].url === url, `The URL [${url}], did not match te expected url [${test_request_data[test_request_data_index].url}]`);
-            assert(test_request_data[test_request_data_index].method === 'get');
-            resolve(test_request_data[test_request_data_index].data);
-            test_request_data_index++;
+        if (test_request_data.length > 0) {
+            if (test_request_data_index < test_request_data.length) {
+                assert(test_request_data[test_request_data_index].url === url, `The URL [${url}], did not match te expected url [${test_request_data[test_request_data_index].url}]`);
+                assert(test_request_data[test_request_data_index].method === 'get');
+                resolve(test_request_data[test_request_data_index].data);
+                test_request_data_index++;
+            }
+            else {
+                resolve(test_request_data[test_request_data_index-1].data);
+            }
             return;
         }
 
-        resolve(data); // when successful
+        resolve(); // when successful
     })
 }
 

@@ -1,5 +1,6 @@
 import Store from "../../src/Store.js";
 import {api_actions_object} from "../../src/ApiActions.js";
+import Car from "./Car.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -7,6 +8,10 @@ template.innerHTML = `
 `
 
 export default class Engine extends HTMLElement {
+
+    static create_from_json(object_json, store_path) {
+        return new Engine(object_json.type, store_path);
+    }
     constructor(type, store_path) {
         super();
         this.store = new Store({object: this, path: store_path, actions: api_actions_object});
@@ -23,4 +28,5 @@ export default class Engine extends HTMLElement {
     }
 }
 
+global_store.register_create_from_json_function("locations/.*/cars/.*/engine$", Engine.create_from_json);
 window.customElements.define('k-engine', Engine);

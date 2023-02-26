@@ -97,35 +97,39 @@ class StoreMapProxy {
         return Reflect.deleteProperty(target, property_name);
     }
 
-    update_from_json(object_json, create_from_json_function) {
+    update_from_json(object_json) {
         let id_property_name = null;
         if (this.length > 0)
             id_property_name = Object.values(this)[0].store.id_property_name;
-        const object_ids = object_json.map(item => item[id_property_name]);
+        const object_map = {};
+        for (const object_json_ of object_json) {
+            object_map[object_json_[id_property_name]] = object_json_;
+        }
+        const object_ids = Object.keys(object_map);
         let processed_ids = [];
         for (const [key, value] of Object.entries(this)) {
-            if (this.length > 0 && !object_ids.includes(value[id_property_name])) {
+            if (this.length > 0 && !object_ids.includes(value[id_property_name].toString())) {
                 delete this[key];
                 continue;
             }
 
             if (is_store_object(value)) {
                 if ('update_from_json' in value)
-                    value.update_from_json(object_json[key], create_from_json_function);
+                    value.update_from_json(object_map[key]);
                 else
-                    value.store.update_from_json(object_json[key], create_from_json_function);
-            } else if (object_json[key] !== value)
-                this.set(object_json[key][id_property_name], object_json[key]);
+                    value.store.update_from_json(object_map[key]);
+            } else if (object_map[key] !== value)
+                this.set(key, object_map[key]);
 
             processed_ids.push(key);
         }
 
-        for (const object_json_ of object_json) {
-            const id = object_json_[id_property_name];
+        for (const [id, object_json_] of Object.entries(object_map)) {
             if (processed_ids.includes(id))
                 continue;
+            const create_from_json_function = global_store._get_create_from_json_function(this.store.get_object_path());
             const object = create_from_json_function(object_json_, `${this.store.get_object_path()}/${id}`);
-            object.store.update_from_json(object_json_, create_from_json_function);
+            object.store.update_from_json(object_json_);
             this[id] = object;
         }
     }
@@ -421,7 +425,7 @@ export class StoreState {
         throw new Error(`Path part [${path}] is not valid`);
     }
 
-    set_json(path, object_json, create_from_json_function=null) {
+    set_json(path, object_json) {
         const path_parts = this._split_path(path);
         if (path_parts[1] == null) {
             if (typeof object_json !== "object") {
@@ -431,29 +435,28 @@ export class StoreState {
                 return this.state[path_parts[0]] = object_json;
             }
             if ('update_from_json' in this.state[path_parts[0]])
-                return this.state[path_parts[0]].update_from_json(object_json, create_from_json_function);
-            return this.object[path_parts[0]].store.update_from_json(object_json, create_from_json_function);
+                return this.state[path_parts[0]].update_from_json(object_json);
+            return this.object[path_parts[0]].store.update_from_json(object_json);
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
             const next_path_parts = this._split_path(path_parts[1]);
             if (next_path_parts[1] == null) {
                 if (!(next_path_parts[0] in this.state[path_parts[0]])) {
-                    if (create_from_json_function == null)
-                        throw new Error(`This object [${path}] does not exist but no create_from_json_function function was passed in for [${object_json}]`);
+                    const create_from_json_function = global_store._get_create_from_json_function(this.get_object_path());
                     const object = create_from_json_function(object_json, `${this.get_object_path()}/${path}`);
                     return this.state[path_parts[0]].store.set(next_path_parts[0], object);
                 } else if ('update_from_json' in this.state[path_parts[0]][next_path_parts[0]])
-                    return this.state[path_parts[0]][next_path_parts[0]].update_from_json(object_json, create_from_json_function);
-                return this.state[path_parts[0]][next_path_parts[0]].store.update_from_json(object_json, create_from_json_function);
+                    return this.state[path_parts[0]][next_path_parts[0]].update_from_json(object_json);
+                return this.state[path_parts[0]][next_path_parts[0]].store.update_from_json(object_json);
             }
             else {
                 if (next_path_parts[0] in this.state[path_parts[0]])
-                    return this.state[path_parts[0]][next_path_parts[0]].store.set_json(next_path_parts[1], object_json, create_from_json_function);
+                    return this.state[path_parts[0]][next_path_parts[0]].store.set_json(next_path_parts[1], object_json);
             }
         }
         else if ('store' in this.state[path_parts[0]] && this.state[path_parts[0]].store instanceof StoreState) {
-            return this.state[path_parts[0]].store.set_json(path_parts[1], object_json, create_from_json_function);
+            return this.state[path_parts[0]].store.set_json(path_parts[1], object_json);
         }
 
         throw new Error(`Path part [${path}] is not valid`);
@@ -615,16 +618,16 @@ export class StoreState {
         return json;
     }
 
-    update_from_json(object_json, create_from_json_function) {
+    update_from_json(object_json) {
         for (const [key, value] of Object.entries(this.state)) {
             if (!(key in object_json))
                 continue;
 
             if (is_store_object(value)) {
                 if ('update_from_json' in value)
-                    value.update_from_json(object_json[key], create_from_json_function);
+                    value.update_from_json(object_json[key]);
                 else
-                    value.store.update_from_json(object_json[key], create_from_json_function);
+                    value.store.update_from_json(object_json[key]);
             } else if (object_json[key] !== value)
                 this.set(key, object_json[key]);
         }

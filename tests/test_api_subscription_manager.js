@@ -24,7 +24,7 @@ const tests = {
         // Create data to be returned from the mocked API
         const locations_json = {method: 'get', url: 'api/v1/locations', data: {locations: global_store.get_json('locations')}};
         const new_locations = {method: 'get', url: 'api/v1/locations', data: {locations: [...locations_json.data.locations, {location: 'Zanzibar', description: 'Fantastic Motors'}, {location: 'Azerbaijan', description: 'Wonderful Vehicles'}]}};
-        const sorted_locations = {method: 'get', url: 'api/v1/locations', data: {locations: new_locations.data.locations.sort(sort_compare_strings)}};
+        const sorted_locations = {method: 'get', url: 'api/v1/locations', data: {locations: [...new_locations.data.locations].sort(sort_compare_strings)}};
         const test_request_data = [
             locations_json,
             locations_json,
@@ -68,7 +68,7 @@ const tests = {
                 index += 1;
         });
 
-        api_subscription_manager.subscribe('locations');
+        api_subscription_manager.subscribe('locations', Location.create_from_json);
         const api_poll_frequency = 2000;
         await new Promise((resolve, reject) => setTimeout(resolve, test_request_data.length * api_poll_frequency + 200));
         api_subscription_manager.unsubscribe('locations');

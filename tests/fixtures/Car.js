@@ -2,6 +2,7 @@ import {api_actions_object} from "../../src/ApiActions.js"
 import Store from "../../src/Store.js";
 import Wheel from "./Wheel.js"
 import Engine from "./Engine.js";
+import Location from "./Location.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -49,4 +50,5 @@ export default class Car extends HTMLElement {
     }
 }
 
+global_store.register_create_from_json_function("locations/.*/cars$", Car.create_from_json);
 window.customElements.define('k-car', Car);

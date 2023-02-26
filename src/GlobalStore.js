@@ -6,6 +6,7 @@ class GlobalStore extends StoreState {
         super('');
         this.base_url = '';
         this.awaiting_parent_store = {};
+        this.create_from_json_functions = {};
     }
 
     _register_store(property_name, store) {
@@ -43,9 +44,9 @@ class GlobalStore extends StoreState {
         return super.set(path, object);
     }
 
-    set_json(path, object_json, create_from_json_function=null) {
+    set_json(path, object_json) {
         this._reconcile_stores();
-        return super.set_json(path, object_json, create_from_json_function);
+        return super.set_json(path, object_json);
     }
 
     set_object_map(property_name, object_list, query_string=null, actions={}, on_change_callback=null) {
@@ -53,6 +54,18 @@ class GlobalStore extends StoreState {
         if (property_name.indexOf('/') === -1)
             this.state[property_name] = null;
         return super.set_object_map(property_name, object_list, query_string, actions, on_change_callback);
+    }
+
+    register_create_from_json_function(path_regex, create_from_json_function) {
+        this.create_from_json_functions[path_regex] = create_from_json_function;
+    }
+
+    _get_create_from_json_function(path) {
+        for (const [path_regex, create_from_json_function] of Object.entries(this.create_from_json_functions)) {
+            if (new RegExp(path_regex).exec(path) != null)
+                return create_from_json_function;
+        }
+        throw new Error(`No create_from_json function found for path [${path}] use global_store.register_create_from_json_function to register a create function.`);
     }
 
     subscribe(path, callback) {
