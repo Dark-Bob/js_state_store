@@ -50,5 +50,5 @@ export default class Car extends HTMLElement {
     }
 }
 
-global_store.register_create_from_json_function("locations/.*/cars$", Car.create_from_json);
+global_store.register_create_from_json_function("locations/.*/cars$", Car.create_from_json, Car.id_member_name);
 window.customElements.define('k-car', Car);

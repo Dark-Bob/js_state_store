@@ -56,8 +56,8 @@ class GlobalStore extends StoreState {
         return super.set_object_map(property_name, object_list, query_string, actions, on_change_callback);
     }
 
-    register_create_from_json_function(path_regex, create_from_json_function) {
-        this.create_from_json_functions[path_regex] = create_from_json_function;
+    register_create_from_json_function(path_regex, create_from_json_function, id_property_name=null) {
+        this.create_from_json_functions[path_regex] = [create_from_json_function, id_property_name];
     }
 
     _get_create_from_json_function(path) {

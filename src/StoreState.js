@@ -3,8 +3,9 @@ export function is_store_object(object) {
     return object != null && typeof object === 'object' && 'store' in object && object.store instanceof StoreState;
 }
 
-export class StoreMap {
+export class StoreMap extends Map {
     constructor() {
+        super();
     }
 
     values() {
@@ -98,39 +99,46 @@ class StoreMapProxy {
     }
 
     update_from_json(object_json) {
-        let id_property_name = null;
-        if (this.length > 0)
-            id_property_name = Object.values(this)[0].store.id_property_name;
-        const object_map = {};
-        for (const object_json_ of object_json) {
-            object_map[object_json_[id_property_name]] = object_json_;
-        }
-        const object_ids = Object.keys(object_map);
-        let processed_ids = [];
-        for (const [key, value] of Object.entries(this)) {
-            if (this.length > 0 && !object_ids.includes(value[id_property_name].toString())) {
-                delete this[key];
-                continue;
+        const original_keys = Object.keys(this);
+        const [create_from_json_function, id_property_name] = global_store._get_create_from_json_function(this.store.get_object_path());
+        const object_list = [];
+        for (let i=0; i<object_json.length; ++i) {
+            const object_json_ = object_json[i];
+            const id = object_json_[id_property_name];
+
+            if (id_property_name != null) {
+                if (object_json_[id_property_name] in this) {
+                    const object = this[object_json_[id_property_name]];
+
+                    if (is_store_object(object)) {
+                        if ('update_from_json' in object)
+                            object.update_from_json(object_json_);
+                        else
+                            object.store.update_from_json(object_json_);
+                    } else if (object_json_ !== object)
+                        this.set(id, object_json_[id]);
+
+                    object_list.push(this[id]);
+                    continue;
+                }
             }
 
-            if (is_store_object(value)) {
-                if ('update_from_json' in value)
-                    value.update_from_json(object_map[key]);
-                else
-                    value.store.update_from_json(object_map[key]);
-            } else if (object_map[key] !== value)
-                this.set(key, object_map[key]);
-
-            processed_ids.push(key);
-        }
-
-        for (const [id, object_json_] of Object.entries(object_map)) {
-            if (processed_ids.includes(id))
-                continue;
-            const create_from_json_function = global_store._get_create_from_json_function(this.store.get_object_path());
             const object = create_from_json_function(object_json_, `${this.store.get_object_path()}/${id}`);
             object.store.update_from_json(object_json_);
-            this[id] = object;
+            object_list.push(object);
+
+            if (this.subscriptions.length > 0) {
+                const values = this.values();
+                for (const callback of this.subscriptions)
+                    callback(values, id, undefined, object, 'add');
+            }
+        }
+
+        // Check if all of the objects are in the same place
+        const object_json_keys = object_json.map(item => item[id_property_name]);
+        if (original_keys.length !== object_json_keys.length || !original_keys.every((value, index) => value === object_json_keys[index].toString())) {
+            // if not set object list again to recreate the map
+            this.store.parent_store.set(this.store.object_name, object_list);
         }
     }
 

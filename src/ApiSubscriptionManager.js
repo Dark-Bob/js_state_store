@@ -5,6 +5,8 @@ let data_subscription_interval = null;
 
 function _split_path(path) {
     // Remove trialing slashes
+    if (path.startsWith('/'))
+        path = path.slice(1);
     if (path.endsWith('/'))
         path = path.slice(0, -1);
     // See if it's made up of more than on section

@@ -42,5 +42,5 @@ export default class Location extends HTMLElement {
     }
 }
 
-global_store.register_create_from_json_function("locations$", Location.create_from_json);
+global_store.register_create_from_json_function("locations$", Location.create_from_json, Location.id_member_name);
 window.customElements.define('k-location', Location);

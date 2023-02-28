@@ -52,6 +52,12 @@ const tests = {
             {
                 property_name: 'locations',
                 change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 2),
+                test_new_value: (new_value) => assert(new_value.length === 4)
+            },
+            {
+                property_name: 'locations',
+                change: 'change',
                 test_current_value: (current_value) => assert(current_value[0].location = 'Wandsworth'),
                 test_new_value: (new_value) => assert(new_value[0].location === 'Azerbaijan')
             }
@@ -68,11 +74,11 @@ const tests = {
                 index += 1;
         });
 
-        api_subscription_manager.subscribe('locations', Location.create_from_json);
+        api_subscription_manager.subscribe('locations');
         const api_poll_frequency = 2000;
         await new Promise((resolve, reject) => setTimeout(resolve, test_request_data.length * api_poll_frequency + 200));
         api_subscription_manager.unsubscribe('locations');
-        assert(index === 3, `[${index}] happened`);
+        assert(index === 4, `[${index}] happened`);
     }
 }
 
