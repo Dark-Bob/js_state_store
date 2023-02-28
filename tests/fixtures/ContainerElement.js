@@ -21,7 +21,7 @@ export default class ContainerElement extends HTMLElement {
         this.store.set_member_map('locations', [
             new Location('Wandsworth', 'Cheap cars', 'container/locations/Wandsworth'),
             new Location('Croydon', 'Bare dealz', 'container/locations/Croydon')
-        ], 'slot[name=locations]', create_api_actions_map(Location, this.store))
+        ], 'slot[name=locations]', create_api_actions_map)
     }
 
     connectedCallback() {

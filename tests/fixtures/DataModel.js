@@ -13,7 +13,7 @@ export default function populate_store() {
         new Location('Wandsworth', 'Cheap cars', 'locations/Wandsworth'),
         new Location('Croydon', 'Bare dealz', 'locations/Croydon')
     ];
-    global_store.set_object_map('locations', locations, null, create_api_actions_map(Location));
+    global_store.set_object_map('locations', locations, null, create_api_actions_map);
 
     return global_store;
 }

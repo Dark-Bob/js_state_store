@@ -60,7 +60,7 @@ class GlobalStore extends StoreState {
         this.create_from_json_functions[path_regex] = [create_from_json_function, id_property_name];
     }
 
-    _get_create_from_json_function(path) {
+    get_create_from_json_function(path) {
         for (const [path_regex, create_from_json_function] of Object.entries(this.create_from_json_functions)) {
             if (new RegExp(path_regex).exec(path) != null)
                 return create_from_json_function;

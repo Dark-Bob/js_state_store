@@ -100,7 +100,7 @@ class StoreMapProxy {
 
     update_from_json(object_json) {
         const original_keys = Object.keys(this);
-        const [create_from_json_function, id_property_name] = global_store._get_create_from_json_function(this.store.get_object_path());
+        const [create_from_json_function, id_property_name] = global_store.get_create_from_json_function(this.store.get_object_path());
         const object_list = [];
         for (let i=0; i<object_json.length; ++i) {
             const object_json_ = object_json[i];
@@ -451,7 +451,7 @@ export class StoreState {
             const next_path_parts = this._split_path(path_parts[1]);
             if (next_path_parts[1] == null) {
                 if (!(next_path_parts[0] in this.state[path_parts[0]])) {
-                    const create_from_json_function = global_store._get_create_from_json_function(this.get_object_path());
+                    const [create_from_json_function, id_property_name] = global_store.get_create_from_json_function(`${this.get_object_path()}/${path_parts[0]}`);
                     const object = create_from_json_function(object_json, `${this.get_object_path()}/${path}`);
                     return this.state[path_parts[0]].store.set(next_path_parts[0], object);
                 } else if ('update_from_json' in this.state[path_parts[0]][next_path_parts[0]])
