@@ -1,4 +1,4 @@
-import {api_actions_object, create_api_actions_map} from "../../src/ApiActions.js"
+import {api_actions_object, api_actions_map} from "../../src/ApiActions.js"
 import Store from "../../src/Store.js";
 import Car from "./Car.js"
 
@@ -28,7 +28,7 @@ export default class Location extends HTMLElement {
         this.store.set_member_map('cars', [
             new Car(0, 'Ferrari', 'F40', 80_000, `${store_path}/cars/0`),
             new Car(1, 'Lamborghini', 'Diablo', 100_000, `${store_path}/cars/1`)
-        ], 'slot[name=cars]', create_api_actions_map);
+        ], 'slot[name=cars]', api_actions_map);
         console.log(`Location: ${this.location}, ${this.description}`);
     }
 

@@ -1,4 +1,4 @@
-import {api_actions_object, create_api_actions_map} from "../../src/ApiActions.js"
+import {api_actions_object, api_actions_map} from "../../src/ApiActions.js"
 import Store from "../../src/Store.js";
 import Car from "./Car.js"
 import global_store from "../../src/GlobalStore.js";
@@ -21,7 +21,7 @@ export default class ContainerElement extends HTMLElement {
         this.store.set_member_map('locations', [
             new Location('Wandsworth', 'Cheap cars', 'container/locations/Wandsworth'),
             new Location('Croydon', 'Bare dealz', 'container/locations/Croydon')
-        ], 'slot[name=locations]', create_api_actions_map)
+        ], 'slot[name=locations]', api_actions_map)
     }
 
     connectedCallback() {

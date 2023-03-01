@@ -11,7 +11,7 @@ export const api_actions_object = {
     }
 };
 
-export const create_api_actions_map = {
+export const api_actions_map = {
     add(store, state) {
         const [create_from_json_function, id_property_name] = global_store.get_create_from_json_function(store.get_object_path());
         // We mirror the same path on the API
