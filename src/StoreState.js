@@ -72,8 +72,14 @@ class StoreMapProxy {
         }
         if (this.subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions)
-                callback(values, property_name, target[property_name], value, 'change');
+            for (const callback of this.subscriptions) {
+                try {
+                    callback(values, property_name, target[property_name], value, 'change');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
         }
         return Reflect.set(...arguments);
     }
@@ -83,8 +89,14 @@ class StoreMapProxy {
             return Reflect.defineProperty(...arguments);
         if (this.subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions)
-                callback(values, property_name, target[property_name], descriptor['value'], 'add');
+            for (const callback of this.subscriptions) {
+                try {
+                    callback(values, property_name, target[property_name], descriptor['value'], 'add');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
         }
         return Reflect.defineProperty(target, property_name, descriptor);
     }
@@ -92,8 +104,14 @@ class StoreMapProxy {
     deleteProperty(target, property_name) {
         if (this.subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions)
-                callback(values, property_name, target[property_name], undefined, 'remove');
+            for (const callback of this.subscriptions) {
+                try {
+                    callback(values, property_name, target[property_name], undefined, 'remove');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
         }
         return Reflect.deleteProperty(target, property_name);
     }
@@ -129,8 +147,14 @@ class StoreMapProxy {
 
             if (this.subscriptions.length > 0) {
                 const values = this.values();
-                for (const callback of this.subscriptions)
-                    callback(values, id, undefined, object, 'add');
+                for (const callback of this.subscriptions) {
+                    try {
+                        callback(values, id, undefined, object, 'add');
+                    } catch (exception)
+                    {
+                        console.error(exception, exception.stack);
+                    }
+                }
             }
         }
 
@@ -209,8 +233,14 @@ export class StoreArrayProxy {
             return Reflect.set(...arguments);
         if (this.subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions)
-                callback(values, property_name, target[property_name], value, 'change');
+            for (const callback of this.subscriptions) {
+                try {
+                    callback(values, property_name, target[property_name], value, 'change');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
         }
         return Reflect.set(...arguments);
     }
@@ -219,16 +249,28 @@ export class StoreArrayProxy {
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
         if (this.subscriptions.length > 0) {
-            for (const callback of this.subscriptions)
-                callback(target, property_name, target, descriptor['value'], 'add');
+            for (const callback of this.subscriptions) {
+                try {
+                    callback(target, property_name, target, descriptor['value'], 'add');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
         }
         return Reflect.defineProperty(target, property_name, descriptor);
     }
 
     deleteProperty(target, property_name) {
         if (this.subscriptions.length > 0) {
-            for (const callback of this.subscriptions)
-                callback(target, property_name, target, undefined, 'remove');
+            for (const callback of this.subscriptions) {
+                try {
+                    callback(target, property_name, target, undefined, 'remove');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
         }
         return Reflect.deleteProperty(target, property_name);
     }
@@ -493,10 +535,22 @@ export class StoreState {
                 set: function (new_value) {
                     if (this.store.object_subscriptions.length > 0 || this.store.property_subscriptions[property_name].length > 0) {
                         const transformed_current_value = transform_current_value(this.store.state[property_name]);
-                        for (const callback of this.store.object_subscriptions)
-                            callback(this, property_name, transformed_current_value, new_value, 'change')
-                        for (const callback of this.store.property_subscriptions[property_name])
-                            callback(this, property_name, transformed_current_value, new_value, 'change')
+                        for (const callback of this.store.object_subscriptions) {
+                            try {
+                                callback(this, property_name, transformed_current_value, new_value, 'change');
+                            } catch (exception)
+                            {
+                                console.error(exception, exception.stack);
+                            }
+                        }
+                        for (const callback of this.store.property_subscriptions[property_name]) {
+                            try {
+                                callback(this, property_name, transformed_current_value, new_value, 'change');
+                            } catch (exception)
+                            {
+                                console.error(exception, exception.stack);
+                            }
+                        }
                     }
                     this.store.state[property_name] = create_new_value(new_value, this.store.state[property_name], `${this.store.path}/${property_name}`, property_name, actions);
                     this.store._update_dom(property_name);
