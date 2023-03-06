@@ -28,6 +28,10 @@ function subscribe_to_apis(subscriptions) {
         data_subscription_interval_call_happening = true;
         for (const subscription of subscriptions) {
             const url = global_store.get_url(subscription);
+            if (url == null) {
+                console.warn(`Cannot fetch [${subscription}], internal state is not set for this path in the global store.`);
+                continue;
+            }
             fetch_get_json(url)
                 .then(response => {
                     const object_name = _split_path(subscription)[1] || subscription;
