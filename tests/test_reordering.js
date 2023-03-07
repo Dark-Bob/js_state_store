@@ -20,6 +20,12 @@ const tests = {
                 test_new_value: (new_value) => assert(new_value.location === 'Zanzibar')
             },
             {
+                property_name: 'locations',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 2),
+                test_new_value: (new_value) => assert(new_value.length === 3)
+            },
+            {
                 property_name: 'Azerbaijan',
                 change: 'add',
                 test_current_value: (current_value) => assert(current_value === undefined),
@@ -28,8 +34,44 @@ const tests = {
             {
                 property_name: 'locations',
                 change: 'change',
-                test_current_value: (current_value) => assert(current_value[0].location = 'Wandsworth'),
-                test_new_value: (new_value) => assert(new_value[0].location === 'Azerbaijan')
+                test_current_value: (current_value) => assert(current_value.length === 3),
+                test_new_value: (new_value) => assert(new_value.length === 4)
+            },
+            {
+                property_name: 'Azerbaijan',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Azerbaijan')
+            },
+            {
+                property_name: 'Croydon',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Croydon')
+            },
+            {
+                property_name: 'Wandsworth',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Wandsworth')
+            },
+            {
+                property_name: 'Zanzibar',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Zanzibar')
+            },
+            {
+                property_name: 'locations',
+                change: 'change',
+                test_current_value: (current_value) => {
+                    assert(current_value[0].location === 'Wandsworth');
+                    assert(current_value.length === 4);
+                },
+                test_new_value: (new_value) => {
+                    assert(new_value[0].location === 'Azerbaijan');
+                    assert(new_value.length === 4);
+                }
             }
         ]
         let index_location = 0;

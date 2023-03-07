@@ -1,4 +1,9 @@
 
+
+function is_called_from_function(function_name) {
+    return new Error().stack.includes(function_name);
+}
+
 export function is_store_object(object) {
     return object != null && typeof object === 'object' && 'store' in object && object.store instanceof StoreState;
 }
@@ -99,7 +104,18 @@ class StoreMapProxy {
                 }
             }
         }
-        return Reflect.defineProperty(target, property_name, descriptor);
+        const original_values = this.object.values();
+        const return_value = Reflect.defineProperty(target, property_name, descriptor);
+        if (!is_called_from_function('_create_object_map')) {
+            for (const callback of this.store.object_subscriptions) {
+                try {
+                    callback(this, this.store.object_name, original_values, this.object.values(), 'change');
+                } catch (exception) {
+                    console.error(exception, exception.stack);
+                }
+            }
+        }
+        return return_value;
     }
 
     deleteProperty(target, property_name) {
@@ -114,7 +130,18 @@ class StoreMapProxy {
                 }
             }
         }
-        return Reflect.deleteProperty(target, property_name);
+        const original_values = this.object.values();
+        const return_value = Reflect.deleteProperty(target, property_name);
+        if (!is_called_from_function('_create_object_map')) {
+            for (const callback of this.store.object_subscriptions) {
+                try {
+                    callback(this, this.store.object_name, original_values, this.object.values(), 'change');
+                } catch (exception) {
+                    console.error(exception, exception.stack);
+                }
+            }
+        }
+        return return_value;
     }
 
     update_from_json(object_json) {
@@ -253,28 +280,50 @@ export class StoreArrayProxy {
         if (this.store.object_subscriptions.length > 0) {
             for (const callback of this.store.object_subscriptions) {
                 try {
-                    callback(target, property_name, target, value, 'add');
+                    callback(target, property_name, target[property_name], value, 'add');
                 } catch (exception)
                 {
                     console.error(exception, exception.stack);
                 }
             }
         }
-        return Reflect.defineProperty(target, property_name, descriptor);
+        const original_values = [...this.object];
+        const return_value = Reflect.defineProperty(target, property_name, descriptor);
+        if (!is_called_from_function('create_from_array')) {
+            for (const callback of this.store.object_subscriptions) {
+                try {
+                    callback(this, this.store.object_name, original_values, this.object, 'change');
+                } catch (exception) {
+                    console.error(exception, exception.stack);
+                }
+            }
+        }
+        return return_value;
     }
 
     deleteProperty(target, property_name) {
         if (this.store.object_subscriptions.length > 0) {
             for (const callback of this.store.object_subscriptions) {
                 try {
-                    callback(target, property_name, target, undefined, 'remove');
+                    callback(target, property_name, target[property_name], undefined, 'remove');
                 } catch (exception)
                 {
                     console.error(exception, exception.stack);
                 }
             }
         }
-        return Reflect.deleteProperty(target, property_name);
+        const original_values = [...this.object];
+        const return_value = Reflect.deleteProperty(target, property_name);
+        if (!is_called_from_function('create_from_array')) {
+            for (const callback of this.store.object_subscriptions) {
+                try {
+                    callback(this, this.store.object_name, original_values, this.object.filter(item => item !== undefined), 'change');
+                } catch (exception) {
+                    console.error(exception, exception.stack);
+                }
+            }
+        }
+        return return_value;
     }
 
     to_json() {
@@ -297,6 +346,10 @@ export class StoreState {
     constructor(path, is_part_of_url=true, object=null) {
         if (!(typeof path === 'string'))
             throw new Error('A store must be intialized with a path of type [string].')
+        if (path.startsWith('/'))
+            path = path.slice(1);
+        if (path.endsWith('/'))
+            path = path.slice(0, -1);
         const path_parts = this._split_path(path, false);
         const is_global_store = path === '';
         this.object_name = path_parts[1];
@@ -330,6 +383,8 @@ export class StoreState {
             if (callback != null)
                 this.object_subscriptions.push(callback);
         }
+
+        this._create_object_map = this._create_object_map.bind(this);
     }
 
     get_object_path() {
@@ -447,13 +502,6 @@ export class StoreState {
         const path_parts = this._split_path(path);
         if (path_parts[1] == null) {
             if (this.state[path_parts[0]] instanceof StoreMap) {
-                if (this.object_subscriptions.length > 0 || this.property_subscriptions[path_parts[0]].length > 0) {
-                    const transformed_current_value = this.state[path_parts[0]].values();
-                    for (const callback of this.object_subscriptions)
-                        callback(this, path_parts[0], transformed_current_value, object, 'change')
-                    for (const callback of this.property_subscriptions[path_parts[0]])
-                        callback(this, path_parts[0], transformed_current_value, object, 'change')
-                }
                 this.state[path_parts[0]] = this._create_object_map(object, this.state[path_parts[0]], `${this.path}/${path_parts[0]}`, path_parts[0], this.actions[path_parts[0]]);
                 if ('_update_dom' in this)
                     this._update_dom(path_parts[0]);
@@ -578,13 +626,39 @@ export class StoreState {
             throw new Error("Expected an array of objects");
 
         const object_map = StoreMapProxy.create_from_object(new StoreMap(), path, actions);
+        if (current_object_map != null)
+            object_map.store.object_subscriptions = current_object_map.store.object_subscriptions;
         for (const object of object_list) {
             if (!is_store_object(object))
                 throw new Error("While an array of objects has been passed in, at least one object does not have a store property of type Store");
             object_map[object.store.get_id()] = object;
         }
-        if (current_object_map != null)
-            object_map.store.object_subscriptions = current_object_map.store.object_subscriptions;
+        if (current_object_map != null) {
+            // Check if all of the objects are in the same place
+            const original_keys = Object.keys(current_object_map);
+            const object_keys = object_list.map(item => item.store.get_id());
+            if (original_keys.length !== object_keys.length || !original_keys.every((value, index) => value.toString() === object_keys[index].toString())) {
+                // if not set call the callback to say it's changed
+                for (const callback of object_map.store.object_subscriptions) {
+                    try {
+                        callback(this.object, property_name, current_object_map.values(), object_list, 'change');
+                    } catch (exception)
+                    {
+                        console.error(exception, exception.stack);
+                    }
+                }
+            }
+        }
+        else {
+            for (const callback of object_map.store.object_subscriptions) {
+                try {
+                    callback(this.object, property_name, [], object_list, 'change');
+                } catch (exception)
+                {
+                    console.error(exception, exception.stack);
+                }
+            }
+        }
         return object_map;
     }
 
@@ -624,6 +698,8 @@ export class StoreState {
     }
 
     _subscribe_property(property_name, callback) {
+        if (!(property_name in this.property_subscriptions && property_name in this.state))
+            return false;
         this.property_subscriptions[property_name].push(callback);
         return true;
     }

@@ -50,10 +50,58 @@ const tests = {
                 test_new_value: (new_value) => assert(new_value.location === 'Azerbaijan')
             },
             {
+                property_name: 'Wandsworth',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Wandsworth')
+            },
+            {
+                property_name: 'Croydon',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Croydon')
+            },
+            {
+                property_name: 'Zanzibar',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Zanzibar')
+            },
+            {
+                property_name: 'Azerbaijan',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Azerbaijan')
+            },
+            {
                 property_name: 'locations',
                 change: 'change',
                 test_current_value: (current_value) => assert(current_value.length === 2),
                 test_new_value: (new_value) => assert(new_value.length === 4)
+            },
+            {
+                property_name: 'Azerbaijan',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Azerbaijan')
+            },
+            {
+                property_name: 'Croydon',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Croydon')
+            },
+            {
+                property_name: 'Wandsworth',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Wandsworth')
+            },
+            {
+                property_name: 'Zanzibar',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Zanzibar')
             },
             {
                 property_name: 'locations',
@@ -78,7 +126,7 @@ const tests = {
         const api_poll_frequency = 2000;
         await new Promise((resolve, reject) => setTimeout(resolve, test_request_data.length * api_poll_frequency + 200));
         api_subscription_manager.unsubscribe('locations');
-        assert(index === 4, `[${index}] happened`);
+        assert(index === expected_values.length, `[${index}] happened`);
     }
 }
 

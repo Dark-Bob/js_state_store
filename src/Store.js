@@ -47,7 +47,7 @@ export default class Store extends StoreState {
         const array_proxy = StoreArrayProxy.create_from_array(array, null, `${this.path}/${property_name}`, property_name, actions);
         if (on_change_callback != null)
             array_proxy.subscribe(on_change_callback)
-        this._set_member(this.object, property_name, array_proxy, query_string, {}, on_change_callback, StoreArrayProxy.create_from_array);
+        this._set_member(this.object, property_name, array_proxy, query_string, {}, on_change_callback, StoreArrayProxy.create_from_array, Array.from);
     }
 
     _update_dom(property_name) {

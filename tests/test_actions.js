@@ -48,6 +48,8 @@ const tests = {
         global_store.subscribe(
             `locations`,
             (object, property_name, current_value, new_value, change) => {
+                if (change !== 'add')
+                    return;
                 assert(property_name === 'Knightsbridge');
                 assert(current_value === undefined);
                 assert(new_value.location === 'Knightsbridge');
@@ -58,6 +60,8 @@ const tests = {
         global_store.subscribe(
             `locations/Wandsworth/cars`,
             (object, property_name, current_value, new_value, change) => {
+                if (change !== 'remove')
+                    return;
                 assert(property_name === '0');
                 assert(new_value === undefined);
                 assert(current_value.id === 0);

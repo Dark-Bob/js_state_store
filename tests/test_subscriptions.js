@@ -115,6 +115,8 @@ const tests = {
         store.subscribe(
             `locations`,
             (object, property_name, current_value, new_value, change) => {
+                if (change !== 'add')
+                    return;
                 assert(property_name === 'Knightsbridge');
                 assert(new_value instanceof Location);
         });
@@ -129,10 +131,22 @@ const tests = {
                 test_new_value: (new_value) => assert(new_value.brand === 'Toyota')
             },
             {
+                property_name: 'cars',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 2),
+                test_new_value: (new_value) => assert(new_value.length === 3)
+            },
+            {
                 property_name: '0',
                 change: 'remove',
                 test_current_value: (current_value) => assert(current_value.brand === 'Ferrari'),
                 test_new_value: (new_value) => assert(new_value === undefined)
+            },
+            {
+                property_name: 'cars',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 3),
+                test_new_value: (new_value) => assert(new_value.length === 2)
             },
             {
                 property_name: '2',
@@ -152,6 +166,18 @@ const tests = {
                     assert(new_value.length === 1);
                     assert(new_value[0].brand === 'Kia');
                 }
+            },
+            {
+                property_name: '4',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.brand === 'Kia')
+            },
+            {
+                property_name: 'cars',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 2),
+                test_new_value: (new_value) => assert(new_value.length === 1)
             }
         ]
         let index = 0;
@@ -183,8 +209,14 @@ const tests = {
             {
                 property_name: '4',
                 change: 'add',
-                test_current_value: (current_value) => { assert(current_value.length === 4) },
+                test_current_value: (current_value) => { assert(current_value === undefined) },
                 test_new_value: (new_value) => { assert(new_value.name === 'spare')}
+            },
+            {
+                property_name: 'wheels',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 4),
+                test_new_value: (new_value) => assert(new_value.length === 5)
             },
             {
                 property_name: 'wheels',
@@ -195,8 +227,14 @@ const tests = {
             {
                 property_name: '3',
                 change: 'remove',
-                test_current_value: (current_value) => assert(current_value.length === 4),
+                test_current_value: (current_value) => assert(current_value.name === 'rear-left'),
                 test_new_value: (new_value) => assert(new_value === undefined)
+            },
+            {
+                property_name: 'wheels',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 4),
+                test_new_value: (new_value) => assert(new_value.length === 3)
             }
         ]
         let index = 0;
@@ -233,14 +271,73 @@ const tests = {
     },
 
     test_subscribe_before_create() {
-        const store = populate_store();
+        global_store.clear();
 
-        store.subscribe(
+        const locations_expected_values = [
+            {
+                property_name: 'Wandsworth',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Wandsworth')
+            },
+            {
+                property_name: 'Croydon',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Croydon')
+            },
+            {
+                property_name: 'locations',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 0),
+                test_new_value: (new_value) => assert(new_value.length === 2)
+            },
+            {
+                property_name: 'Knightsbridge',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Knightsbridge')
+            },
+            {
+                property_name: 'locations',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 2),
+                test_new_value: (new_value) => assert(new_value.length === 3)
+            },
+            {
+                property_name: 'Wandsworth',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Wandsworth')
+            },
+            {
+                property_name: 'Croydon',
+                change: 'add',
+                test_current_value: (current_value) => assert(current_value === undefined),
+                test_new_value: (new_value) => assert(new_value.location === 'Croydon')
+            },
+            {
+                property_name: 'locations',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value.length === 3),
+                test_new_value: (new_value) => assert(new_value.length === 2)
+            }
+        ];
+
+        let locations_index = 0;
+        global_store.subscribe(
             `locations`,
             (object, property_name, current_value, new_value, change) => {
-                assert(property_name === 'Knightsbridge');
-                assert(new_value instanceof Location);
+                assert(locations_expected_values[locations_index].property_name === property_name);
+                assert(locations_expected_values[locations_index].change === change);
+                locations_expected_values[locations_index].test_current_value(current_value);
+                locations_expected_values[locations_index].test_new_value(new_value);
+                locations_index += 1;
         });
+
+        populate_store();
+
+        const original_values = global_store.get('locations');
 
         const expected_values = [
             {
@@ -249,9 +346,10 @@ const tests = {
                 test_current_value: (current_value) => assert(current_value === 'Bangers for sale'),
                 test_new_value: (new_value) => assert(new_value === 'Good motors')
             }
-        ]
+        ];
+
         let index = 0;
-        store.subscribe(
+        global_store.subscribe(
             `locations/Knightsbridge`,
             (object, property_name, current_value, new_value, change) => {
                 assert(expected_values[index].property_name === property_name);
@@ -261,9 +359,10 @@ const tests = {
                 index += 1;
         });
 
-        store.set('locations/Knightsbridge', new Location('Knightsbridge', 'Bangers for sale', 'locations/Knightsbridge'));
-        store.set('locations/Knightsbridge/description', 'Good motors');
-        assert(index === expected_values.length, `Only [${index}] tests ran, some subscriptions didn't fire.`);
+        global_store.set('locations/Knightsbridge', new Location('Knightsbridge', 'Bangers for sale', 'locations/Knightsbridge'));
+        global_store.set('locations/Knightsbridge/description', 'Good motors');
+        global_store.set('locations', original_values);
+        assert(index + locations_index === expected_values.length + locations_expected_values.length, `Only [${index + locations_index}] tests ran, some subscriptions didn't fire.`);
     }
 }
 
