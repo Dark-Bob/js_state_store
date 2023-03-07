@@ -168,6 +168,18 @@ const tests = {
                 }
             },
             {
+                property_name: '1',
+                change: 'remove',
+                test_current_value: (current_value) => assert(current_value.brand === 'Lamborghini'),
+                test_new_value: (new_value) => assert(new_value === undefined)
+            },
+            {
+                property_name: '2',
+                change: 'remove',
+                test_current_value: (current_value) => assert(current_value.brand === 'Mazda'),
+                test_new_value: (new_value) => assert(new_value === undefined)
+            },
+            {
                 property_name: '4',
                 change: 'add',
                 test_current_value: (current_value) => assert(current_value === undefined),
@@ -303,18 +315,6 @@ const tests = {
                 change: 'change',
                 test_current_value: (current_value) => assert(current_value.length === 2),
                 test_new_value: (new_value) => assert(new_value.length === 3)
-            },
-            {
-                property_name: 'Wandsworth',
-                change: 'add',
-                test_current_value: (current_value) => assert(current_value === undefined),
-                test_new_value: (new_value) => assert(new_value.location === 'Wandsworth')
-            },
-            {
-                property_name: 'Croydon',
-                change: 'add',
-                test_current_value: (current_value) => assert(current_value === undefined),
-                test_new_value: (new_value) => assert(new_value.location === 'Croydon')
             },
             {
                 property_name: 'locations',

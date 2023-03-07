@@ -16,7 +16,7 @@ export default class Store extends StoreState {
     }
 
     get_id() {
-        return this.state[this.id_property_name];
+        return this.state[this.id_property_name].toString();
     }
 
     get_object_path() {

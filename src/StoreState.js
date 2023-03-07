@@ -93,7 +93,7 @@ class StoreMapProxy {
         const value = descriptor['value'];
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
-        if (this.store.object_subscriptions.length > 0) {
+        if (!is_called_from_function('_create_object_map') && this.store.object_subscriptions.length > 0) {
             const values = target.values();
             for (const callback of this.store.object_subscriptions) {
                 try {
@@ -119,7 +119,7 @@ class StoreMapProxy {
     }
 
     deleteProperty(target, property_name) {
-        if (this.store.object_subscriptions.length > 0) {
+        if (!is_called_from_function('_create_object_map') && this.store.object_subscriptions.length > 0) {
             const values = target.values();
             for (const callback of this.store.object_subscriptions) {
                 try {
@@ -172,18 +172,6 @@ class StoreMapProxy {
             const object = create_from_json_function(object_json_, `${this.store.get_object_path()}/${id}`);
             object.store.update_from_json(object_json_);
             object_list.push(object);
-
-            if (this.store.object_subscriptions.length > 0) {
-                const values = this.values();
-                for (const callback of this.store.object_subscriptions) {
-                    try {
-                        callback(values, id, undefined, object, 'add');
-                    } catch (exception)
-                    {
-                        console.error(exception, exception.stack);
-                    }
-                }
-            }
         }
 
         // Check if all of the objects are in the same place
@@ -277,7 +265,7 @@ export class StoreArrayProxy {
         const value = descriptor['value'];
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
-        if (this.store.object_subscriptions.length > 0) {
+        if (!is_called_from_function('create_from_array') && this.store.object_subscriptions.length > 0) {
             for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(target, property_name, target[property_name], value, 'add');
@@ -302,7 +290,7 @@ export class StoreArrayProxy {
     }
 
     deleteProperty(target, property_name) {
-        if (this.store.object_subscriptions.length > 0) {
+        if (!is_called_from_function('create_from_array') && this.store.object_subscriptions.length > 0) {
             for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(target, property_name, target[property_name], undefined, 'remove');
@@ -637,11 +625,30 @@ export class StoreState {
             // Check if all of the objects are in the same place
             const original_keys = Object.keys(current_object_map);
             const object_keys = object_list.map(item => item.store.get_id());
+            const current_values = current_object_map.values();
+            const added_values = object_list.filter(item => !original_keys.includes(item.store.get_id()));
+            const removed_values = current_values.filter(item => !object_keys.includes(item.store.get_id()));
             if (original_keys.length !== object_keys.length || !original_keys.every((value, index) => value.toString() === object_keys[index].toString())) {
                 // if not set call the callback to say it's changed
                 for (const callback of object_map.store.object_subscriptions) {
+                    for (const removed_value of removed_values) {
+                        try {
+                            callback(this.object, removed_value.store.get_id(), removed_value, undefined, 'remove');
+                        } catch (exception)
+                        {
+                            console.error(exception, exception.stack);
+                        }
+                    }
+                    for (const added_value of added_values) {
+                        try {
+                            callback(this.object, added_value.store.get_id(), undefined, added_value, 'add');
+                        } catch (exception)
+                        {
+                            console.error(exception, exception.stack);
+                        }
+                    }
                     try {
-                        callback(this.object, property_name, current_object_map.values(), object_list, 'change');
+                        callback(this.object, property_name, current_values, object_list, 'change');
                     } catch (exception)
                     {
                         console.error(exception, exception.stack);
@@ -651,6 +658,14 @@ export class StoreState {
         }
         else {
             for (const callback of object_map.store.object_subscriptions) {
+                for (const added_value of object_list) {
+                    try {
+                        callback(this.object, added_value.store.get_id(), undefined, added_value, 'add');
+                    } catch (exception)
+                    {
+                        console.error(exception, exception.stack);
+                    }
+                }
                 try {
                     callback(this.object, property_name, [], object_list, 'change');
                 } catch (exception)
