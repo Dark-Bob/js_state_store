@@ -26,7 +26,6 @@ class StoreMapProxy {
     constructor(object, path, actions) {
         this.object = object;
         this.actions = actions;
-        this.subscriptions = [];
         this.action = this.action.bind(this);
         this.subscribe = this.subscribe.bind(this);
 
@@ -35,7 +34,7 @@ class StoreMapProxy {
     }
 
     subscribe(callback) {
-        this.subscriptions.push(callback);
+        this.store.object_subscriptions.push(callback);
         return true;
     }
 
@@ -71,9 +70,9 @@ class StoreMapProxy {
             if (value.store.object_name !== current_object_name)
                 throw new Error(`New value object_name [${value.store.object_name}], is not the same as this list [${current_object_name}]`);
         }
-        if (this.subscriptions.length > 0) {
+        if (this.store.object_subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions) {
+            for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(values, property_name, target[property_name], value, 'change');
                 } catch (exception)
@@ -89,9 +88,9 @@ class StoreMapProxy {
         const value = descriptor['value'];
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
-        if (this.subscriptions.length > 0) {
+        if (this.store.object_subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions) {
+            for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(values, property_name, target[property_name], value, 'add');
                 } catch (exception)
@@ -104,9 +103,9 @@ class StoreMapProxy {
     }
 
     deleteProperty(target, property_name) {
-        if (this.subscriptions.length > 0) {
+        if (this.store.object_subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions) {
+            for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(values, property_name, target[property_name], undefined, 'remove');
                 } catch (exception)
@@ -147,9 +146,9 @@ class StoreMapProxy {
             object.store.update_from_json(object_json_);
             object_list.push(object);
 
-            if (this.subscriptions.length > 0) {
+            if (this.store.object_subscriptions.length > 0) {
                 const values = this.values();
-                for (const callback of this.subscriptions) {
+                for (const callback of this.store.object_subscriptions) {
                     try {
                         callback(values, id, undefined, object, 'add');
                     } catch (exception)
@@ -191,14 +190,13 @@ export class StoreArrayProxy {
         const proxy = new Proxy(array, proxy_handler);
         proxy_handler.store.object = proxy;
         if (current_array != null)
-            proxy.subscriptions = current_array.subscriptions;
+            proxy.store.object_subscriptions = current_array.store.object_subscriptions;
         return proxy;
     }
 
     constructor(object, path, actions) {
         this.object = object;
         this.actions = actions;
-        this.subscriptions = [];
         this.action = this.action.bind(this);
         this.subscribe = this.subscribe.bind(this);
 
@@ -207,7 +205,7 @@ export class StoreArrayProxy {
     }
 
     subscribe(callback) {
-        this.subscriptions.push(callback);
+        this.store.object_subscriptions.push(callback);
         return true;
     }
 
@@ -234,9 +232,9 @@ export class StoreArrayProxy {
              return this.subscriptions = value;
         if (!Object.prototype.hasOwnProperty.call(target, property_name) || property_name === 'length')
             return Reflect.set(...arguments);
-        if (this.subscriptions.length > 0) {
+        if (this.store.object_subscriptions.length > 0) {
             const values = target.values();
-            for (const callback of this.subscriptions) {
+            for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(values, property_name, target[property_name], value, 'change');
                 } catch (exception)
@@ -252,8 +250,8 @@ export class StoreArrayProxy {
         const value = descriptor['value'];
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
-        if (this.subscriptions.length > 0) {
-            for (const callback of this.subscriptions) {
+        if (this.store.object_subscriptions.length > 0) {
+            for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(target, property_name, target, value, 'add');
                 } catch (exception)
@@ -266,8 +264,8 @@ export class StoreArrayProxy {
     }
 
     deleteProperty(target, property_name) {
-        if (this.subscriptions.length > 0) {
-            for (const callback of this.subscriptions) {
+        if (this.store.object_subscriptions.length > 0) {
+            for (const callback of this.store.object_subscriptions) {
                 try {
                     callback(target, property_name, target, undefined, 'remove');
                 } catch (exception)
@@ -586,7 +584,7 @@ export class StoreState {
             object_map[object.store.get_id()] = object;
         }
         if (current_object_map != null)
-            object_map.subscriptions = current_object_map.subscriptions;
+            object_map.store.object_subscriptions = current_object_map.store.object_subscriptions;
         return object_map;
     }
 
@@ -599,7 +597,7 @@ export class StoreState {
         if (path_parts[1] == null) {
             if (typeof this.state[path] === 'object' && 'subscribe' in this.state[path])
                 this.state[path].subscribe(callback);
-            if (is_store_object(this.state[path]))
+            else if (is_store_object(this.state[path]))
                 this.state[path].store._subscribe_object(callback);
             return this._subscribe_property(path, callback);
         }
