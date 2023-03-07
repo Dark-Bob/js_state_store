@@ -230,6 +230,40 @@ const tests = {
         // splice()
         // unshift()
         assert(index === expected_values.length, `Only [${index}] tests ran, some subscriptions didn't fire.`);
+    },
+
+    test_subscribe_before_create() {
+        const store = populate_store();
+
+        store.subscribe(
+            `locations`,
+            (object, property_name, current_value, new_value, change) => {
+                assert(property_name === 'Knightsbridge');
+                assert(new_value instanceof Location);
+        });
+
+        const expected_values = [
+            {
+                property_name: 'description',
+                change: 'change',
+                test_current_value: (current_value) => assert(current_value === 'Bangers for sale'),
+                test_new_value: (new_value) => assert(new_value === 'Good motors')
+            }
+        ]
+        let index = 0;
+        store.subscribe(
+            `locations/Knightsbridge`,
+            (object, property_name, current_value, new_value, change) => {
+                assert(expected_values[index].property_name === property_name);
+                assert(expected_values[index].change === change);
+                expected_values[index].test_current_value(current_value);
+                expected_values[index].test_new_value(new_value);
+                index += 1;
+        });
+
+        store.set('locations/Knightsbridge', new Location('Knightsbridge', 'Bangers for sale', 'locations/Knightsbridge'));
+        store.set('locations/Knightsbridge/description', 'Good motors');
+        assert(index === expected_values.length, `Only [${index}] tests ran, some subscriptions didn't fire.`);
     }
 }
 

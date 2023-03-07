@@ -36,6 +36,7 @@ class StoreMapProxy {
 
     subscribe(callback) {
         this.subscriptions.push(callback);
+        return true;
     }
 
     action(action, state) {
@@ -85,13 +86,14 @@ class StoreMapProxy {
     }
 
     defineProperty(target, property_name, descriptor) {
+        const value = descriptor['value'];
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
         if (this.subscriptions.length > 0) {
             const values = target.values();
             for (const callback of this.subscriptions) {
                 try {
-                    callback(values, property_name, target[property_name], descriptor['value'], 'add');
+                    callback(values, property_name, target[property_name], value, 'add');
                 } catch (exception)
                 {
                     console.error(exception, exception.stack);
@@ -206,6 +208,7 @@ export class StoreArrayProxy {
 
     subscribe(callback) {
         this.subscriptions.push(callback);
+        return true;
     }
 
     action(action, state) {
@@ -246,12 +249,13 @@ export class StoreArrayProxy {
     }
 
     defineProperty(target, property_name, descriptor) {
+        const value = descriptor['value'];
         if (Object.prototype.hasOwnProperty.call(target, property_name))
             return Reflect.defineProperty(...arguments);
         if (this.subscriptions.length > 0) {
             for (const callback of this.subscriptions) {
                 try {
-                    callback(target, property_name, target, descriptor['value'], 'add');
+                    callback(target, property_name, target, value, 'add');
                 } catch (exception)
                 {
                     console.error(exception, exception.stack);
@@ -296,6 +300,7 @@ export class StoreState {
         if (!(typeof path === 'string'))
             throw new Error('A store must be intialized with a path of type [string].')
         const path_parts = this._split_path(path, false);
+        const is_global_store = path === '';
         this.object_name = path_parts[1];
         this.object = object;
         this.path = path;
@@ -310,7 +315,7 @@ export class StoreState {
             }
         }
         else {
-            if (this.path !== '') {
+            if (!is_global_store) {
                 this.parent_store = global_store;
                 global_store._register_store(this.object_name, this);
             }
@@ -321,6 +326,12 @@ export class StoreState {
         this.dom_mapping = {};
         this.object_subscriptions = [];
         this.property_subscriptions = {};
+
+        if (!is_global_store) {
+            const callback = global_store._pop_future_subscription(path);
+            if (callback != null)
+                this.object_subscriptions.push(callback);
+        }
     }
 
     get_object_path() {
@@ -593,33 +604,35 @@ export class StoreState {
             return this._subscribe_property(path, callback);
         }
 
-        if (this.state[path_parts[0]] instanceof StoreMap) {
-            const next_path_parts = this._split_path(path_parts[1]);
-            if (next_path_parts[1] == null) {
-                if (!(next_path_parts[0] in this.state[path_parts[0]]))
-                    throw new Error(`ID [${next_path_parts[0]}] does not exist for object_name [${path_parts[0]}]`);
-                return this.state[path_parts[0]][next_path_parts[0]].store._subscribe_object(callback);
+        if (path_parts[0] in this.state) {
+            if (this.state[path_parts[0]] instanceof StoreMap) {
+                const next_path_parts = this._split_path(path_parts[1]);
+                if (next_path_parts[1] == null) {
+                    if (!(next_path_parts[0] in this.state[path_parts[0]]))
+                        return false;
+                    return this.state[path_parts[0]][next_path_parts[0]].store._subscribe_object(callback);
+                } else {
+                    if (next_path_parts[0] in this.state[path_parts[0]])
+                        return this.state[path_parts[0]][next_path_parts[0]].store.subscribe(next_path_parts[1], callback);
+                    else
+                        return false;
+                }
+            } else if ('store' in this.state[path_parts[0]] && this.state[path_parts[0]].store instanceof StoreState) {
+                return this.state[path_parts[0]].store.subscribe(path_parts[1], callback);
             }
-            else {
-                if (next_path_parts[0] in this.state[path_parts[0]])
-                    return this.state[path_parts[0]][next_path_parts[0]].store.subscribe(next_path_parts[1], callback);
-                else
-                    throw new Error(`Path part [${next_path_parts[0]}] in path [${path}] is not valid`);
-            }
-        }
-        else if ('store' in this.state[path_parts[0]] && this.state[path_parts[0]].store instanceof StoreState) {
-            return this.state[path_parts[0]].store.subscribe(path_parts[1], callback);
         }
 
-        throw new Error(`Path [${path}] is not valid`);
+        return false;
     }
 
     _subscribe_property(property_name, callback) {
         this.property_subscriptions[property_name].push(callback);
+        return true;
     }
 
     _subscribe_object(callback) {
         this.object_subscriptions.push(callback);
+        return true;
     }
 
     async action(action, path, state) {

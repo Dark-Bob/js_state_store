@@ -7,6 +7,7 @@ class GlobalStore extends StoreState {
         this.base_url = '';
         this.awaiting_parent_store = {};
         this.create_from_json_functions = {};
+        this.future_subscriptions = {};
     }
 
     _register_store(property_name, store) {
@@ -68,9 +69,23 @@ class GlobalStore extends StoreState {
         throw new Error(`No create_from_json function found for path [${path}] use global_store.register_create_from_json_function to register a create function.`);
     }
 
+    _register_future_subscription(path, callback) {
+        this.future_subscriptions[path] = callback;
+        return true;
+    }
+
+    _pop_future_subscription(path) {
+        if (!(path in this.future_subscriptions))
+            return null;
+        const callback = this.future_subscriptions[path];
+        delete this.future_subscriptions[path];
+        return callback;
+    }
+
     subscribe(path, callback) {
         this._reconcile_stores();
-        return super.subscribe(path, callback);
+        if(!super.subscribe(path, callback))
+            return this._register_future_subscription(path, callback);
     }
 
     action(action, path, state) {
