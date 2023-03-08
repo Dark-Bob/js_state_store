@@ -161,6 +161,13 @@ in our store. So if someone sets some JSON and the path patches,
 then the creation function set here gets used. The string here is 
 just a standard regex that uses the `.*` to match any id and the 
 `$` ensures that it doesn't match longer urls.
+
+When we set_json to update an existing object, it tries to merge 
+objects and ignore state that is not actually different. This means 
+if you have an API call that returns JSON state you can just set the 
+whole object and the store will smart update. You can update outer 
+and nested objects at the same time, whatever you pass in, it will 
+match.
 ### Actions
 You might have noticed the complete lack of boilerplate, mutators and 
 things like that. I've taken the approach of trusting the coder to be 
@@ -242,6 +249,30 @@ this.store = new Store({object: this, path: 'locations_container', actions: api_
 By setting `is_part_of_url=false`, we get:
 
 object_path: `locations_container/location/London/cars/3954` -> object_url: `api/v1/location/London/cars/3954`
+
+Our APIs use:
+* POST - Create -> Pass JSON of object state
+* GET - List objects / get object depending on if it's called on 
+the noun `api/v1/locations` or the id `api/v1/locations/London` -> Returns JSON of object state
+* DELETE - Delete object eg: `api/v1/locations/London`
+* PATCH - Update object -> Pass JSON key value pairs of what object parameters to update
+
+If your API matches then fantastic you can just pass in our actions 
+as is, and you only need the one set of actions for your entire 
+state tree.
+### API Subscription Manager
+Sometimes there are lists of objects that we need to monitor, to 
+ensure that we're displaying the latest data. For this we have the 
+`ApiSubscriptionManager`.
+We just set it up listen to a path and it will keep the state updated 
+for us.
+```javascript
+api_subscription_manager.subscribe('locations');
+// Subscribe to nested lists
+api_subscription_manager.subscribe('locations/London/cars');
+api_subscription_manager.unsubscribe('locations');
+```
+
 
 ---
 ## Setup / Install / Getting Started
