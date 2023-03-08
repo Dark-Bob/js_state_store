@@ -29,7 +29,7 @@ export default class Store extends StoreState {
         if (!this.is_part_of_url)
             return parent_url;
         if (this.parent_store != null)
-            return `${parent_url}/${this.object_name}/${this.get_id()}`;
+            return `${parent_url}/${this.object_name}`;
         return `${this.object_name}/${this.get_id()}`;
     }
 
