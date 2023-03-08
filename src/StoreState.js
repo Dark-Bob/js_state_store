@@ -344,7 +344,7 @@ export class StoreState {
         this.object = object;
         this.path = path;
         if (path_parts[0] != null) {
-            const parent = global_store.get(path_parts[0], false);
+            const parent = global_store.get(path_parts[0], false, true, true);
             if (parent != null) {
                 this.parent_store = parent.store;
             }
