@@ -17,7 +17,7 @@ function _split_path(path) {
 }
 
 function subscribe_to_apis(subscriptions) {
-    console.log(`Subscribing to APIs [${subscriptions}]`);
+    console.log(`Subscribing to APIs [${Object.keys(subscriptions)}]`);
     if (data_subscription_interval !== null)
         clearInterval(data_subscription_interval);
 
@@ -26,17 +26,21 @@ function subscribe_to_apis(subscriptions) {
             return;
 
         data_subscription_interval_call_happening = true;
-        for (const subscription of subscriptions) {
-            const url = global_store.get_url(subscription);
+        for (const [store_path, subscription_data] of Object.entries(subscriptions)) {
+            const url = global_store.get_url(store_path);
             if (url == null) {
-                console.warn(`Cannot fetch [${subscription}], internal state is not set for this path in the global store.`);
+                console.warn(`Cannot fetch [${store_path}], internal state is not set for this path in the global store.`);
                 continue;
             }
             fetch_get_json(url)
                 .then(response => {
-                    const object_name = _split_path(subscription)[1] || subscription;
+                    let object_name;
+                    if (subscription_data['returned_object_name'] != null)
+                        object_name = subscription_data['returned_object_name'];
+                    else
+                        object_name = _split_path(store_path)[1] || store_path;
                     const new_list = response[object_name];
-                    global_store.set_json(subscription, new_list);
+                    global_store.set_json(store_path, new_list);
                 })
                 .catch(error => console.error(error));
         }
@@ -52,13 +56,15 @@ class ApiSubscriptionManager {
         this.subscriptions = [];
     }
 
-    subscribe(store_path) {
-        this.subscriptions.push(store_path);
+    subscribe(store_path, returned_object_name=null) {
+        if (store_path in this.subscriptions)
+            throw new Error(`Already subscribed to [${store_path}]`);
+        this.subscriptions[store_path] = {returned_object_name: returned_object_name};
         subscribe_to_apis(this.subscriptions);
     }
 
     unsubscribe(store_path) {
-        this.subscriptions = this.subscriptions.filter(item => item !== store_path);
+        delete this.subscriptions[store_path];
         subscribe_to_apis(this.subscriptions);
     }
 }

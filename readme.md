@@ -102,6 +102,43 @@ const cars = global_store.get('location/London/cars');
 cars['3954'].brand = 'Porche';
 ```
 
+### Updating the DOM
+
+When we set a member, we can also set a query selector for the DOM. 
+If we set this, the state store will automatically update the DOM 
+for us to match the state. The syntax for the query selector is 
+exactly the same as [document.querySelectorAll](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelectorAll)
+
+```javascript
+const template = document.createElement("template");
+template.innerHTML = `
+    <div>
+        <div id="brand"></div>
+        <h3></div>
+        <div>£<span class="price"></span></div>
+        <div>Get car financing on the total amount £<span class="price"></span></div>
+    </div>
+`;
+
+export default class Car extends HTMLElement {
+
+    constructor(id, brand, model, price, store_path) {
+        super();
+        this.store = new Store({object: this, path: store_path, actions: api_actions_object});
+        this.store.set_id(Car.id_member_name, id);
+        this.store.set_member('brand', brand, '#brand');
+        this.store.set_member('model', model, 'h3');
+        this.store.set_member('price', price, '.price');
+    }
+}
+```
+The example above matches the brand property to the div id=brand 
+based on id. The model property to any h3 tags and the price 
+property to any elements with the class price.
+
+We can also map complex objects like this including other 
+elements and lists.
+
 ### Subscriptions
 
 Often various DOM objects want to track the state of various parts of 
@@ -272,8 +309,28 @@ api_subscription_manager.subscribe('locations');
 api_subscription_manager.subscribe('locations/London/cars');
 api_subscription_manager.unsubscribe('locations');
 ```
+By default it assumes that there will be a JSON response with a property of the same name. eg:
+```javascript
+// Subscription
+api_subscription_manager.subscribe('locations/London/cars');
 
+// API endpoint
+'api/v1/locations/London/cars'
 
+// Expected returned object from API
+{'cars': [...]}
+```
+If it turns out that the object returned has a different name, we can set that on subscribe. eg:
+```javascript
+// Subscription
+api_subscription_manager.subscribe('locations/London/cars', 'motor_vehicles');
+
+// API endpoint
+'api/v1/locations/London/cars'
+
+// Expected returned object from API
+{'motor_vehicles': [...]}
+```
 ---
 ## Setup / Install / Getting Started
 The simplest way is just to import the files for the CDN eg:
