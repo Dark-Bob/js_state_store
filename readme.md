@@ -174,6 +174,47 @@ class Something extends HTMLElement {
     }
 }
 ```
+If you want to create another element that listens in to another 
+objects state, that's pretty straightforward. Here we might imagine 
+a selected car logo object, that needs to listen to the state
+`selected_car/brand` and listen for updates.
+```javascript
+template.innerHTML = `
+    <img id="logo"/>
+`;
+class CarLogo extends HTMLElement {
+    constructor(car_brand_store_path) {
+        this.car_brand_store_path = car_brand_store_path;
+        this.logos = {
+            'Ferrari': 'ferrari.jpg',
+            'Lomborghini': 'lambo.png',
+        }
+        this.on_change = this.on_change.bind(this);
+    }
+    
+    on_change(object, property_name, current_value, new_value, change) {
+        this.image.src = this.logos[new_value];
+    }
+    
+    connectedCallback() {
+        if (!this.shadowRoot) {
+            this.attachShadow({mode: 'open'});
+            const template_element = template.content.cloneNode(true);
+            this.image = template.getElementById('logo');
+            this.shadowRoot.appendChild(template_element);
+            this.image.src = this.logos[global_store.get(this.car_brand_store_path)];
+        }
+        
+        // We can subscirbe to our store without the full path
+        this.store.subscribe(this.car_brand_store_path, this.on_change);
+    }
+    
+    disconnectedCallback() {
+        this.store.unsubscribe(this.car_brand_store_path, this.on_change);
+    }
+}
+```
+
 ### Get JSON / Set JSON
 Dealing with state as the actual element objects is nice and all but 
 for interacting with APIs sometimes we need to be able to get and set 
@@ -331,6 +372,48 @@ api_subscription_manager.subscribe('locations/London/cars', 'motor_vehicles');
 // Expected returned object from API
 {'motor_vehicles': [...]}
 ```
+
+### Nested Object API Subscription
+A large part of the motivation for building this store was to add 
+support for nested object subscription.
+
+If we have a state structure like 
+`selected_location/locations/<location_id>/cars` then when we
+change the selected location, we may want to subscribe to the `cars`
+endpoint to listen for updates to the cars array but only for that 
+location. To do this we can add an API subscription to the connected / 
+disconnected callbacks for the `Location` object that owns the list 
+of cars.
+```javascript
+export default class Location extends HTMLElement {
+
+    constructor(location, description, store_path) {
+        super();
+        this.store = new Store({object: this, path: store_path, actions: api_actions_object});
+        this.store.set_id(Location.id_member_name, location, '#title');
+        this.store.set_member_map('cars', [
+            new Car(0, 'Ferrari', 'F40', 80_000, `${store_path}/cars/0`),
+            new Car(1, 'Lamborghini', 'Diablo', 100_000, `${store_path}/cars/1`)
+        ], 'slot[name=cars]', api_actions_map);
+    }
+
+    connectedCallback() {
+        if (!this.shadowRoot) {
+            this.attachShadow({mode: 'open'});
+            this.shadowRoot.appendChild(template.content.cloneNode(true));
+            this.store.synchronize_dom();
+        }
+        
+        // Subscribe to the cars API
+        api_subscription_manager.subscribe(`${this.store.get_object_path()}/cars`);
+    }
+    
+    disconnectedCallback() {
+        api_subscription_manager.unsubscribe(`${this.store.get_object_path()}/cars`);
+    }
+}
+```
+
 ---
 ## Setup / Install / Getting Started
 The simplest way is just to import the files for the CDN eg:
