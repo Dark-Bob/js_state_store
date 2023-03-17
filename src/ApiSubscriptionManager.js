@@ -27,7 +27,7 @@ function subscribe_to_apis(subscriptions) {
 
         data_subscription_interval_call_happening = true;
         for (const [store_path, subscription_data] of Object.entries(subscriptions)) {
-            const url = global_store.get_url(store_path);
+            const url = subscription_data['url'] || global_store.get_url(store_path);
             if (url == null) {
                 console.warn(`Cannot fetch [${store_path}], internal state is not set for this path in the global store.`);
                 continue;
@@ -56,10 +56,10 @@ class ApiSubscriptionManager {
         this.subscriptions = [];
     }
 
-    subscribe(store_path, returned_object_name=null) {
+    subscribe(store_path, returned_object_name=null, url=null) {
         if (store_path in this.subscriptions)
             throw new Error(`Already subscribed to [${store_path}]`);
-        this.subscriptions[store_path] = {returned_object_name: returned_object_name};
+        this.subscriptions[store_path] = {returned_object_name: returned_object_name, url: url};
         subscribe_to_apis(this.subscriptions);
     }
 
