@@ -712,6 +712,10 @@ export class StoreState {
         return false;
     }
 
+    unsubscribe(path, callback) {
+        // Not implemented, hook up later
+    }
+
     _subscribe_property(property_name, callback) {
         if (!(property_name in this.property_subscriptions && property_name in this.state))
             return false;
