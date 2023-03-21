@@ -684,7 +684,7 @@ export class StoreState {
     subscribe(path, callback) {
         const path_parts = this._split_path(path);
         if (path_parts[1] == null) {
-            if (typeof this.state[path] === 'object' && 'subscribe' in this.state[path])
+            if (this.state[path] != null && typeof this.state[path] === 'object' && 'subscribe' in this.state[path])
                 this.state[path].subscribe(callback);
             else if (is_store_object(this.state[path]))
                 this.state[path].store._subscribe_object(callback);
