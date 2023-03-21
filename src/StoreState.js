@@ -13,6 +13,10 @@ export class StoreMap extends Map {
         super();
     }
 
+    set_map(key, value) {
+        super.set(key, value)
+    }
+
     values() {
         return Object.values(this);
     }
@@ -60,7 +64,10 @@ class StoreMapProxy {
              return this[property_name];
         if (property_name === 'length')
             return target.values().length;
-        return Reflect.get(...arguments);
+        const result = Reflect.get(...arguments);
+        if (typeof result === 'function' && ['set_map'].includes(property_name))
+            return result.bind(target);
+        return result;
     }
 
     set(target, property_name, value, receiver) {
@@ -619,7 +626,8 @@ export class StoreState {
         for (const object of object_list) {
             if (!is_store_object(object))
                 throw new Error("While an array of objects has been passed in, at least one object does not have a store property of type Store");
-            object_map.set(object.store.get_id(), object);
+            object_map.set_map(object.store.get_id(), object);
+            object_map[object.store.get_id()] = object;
         }
         if (current_object_map != null) {
             // Check if all of the objects are in the same place
