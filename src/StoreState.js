@@ -619,7 +619,7 @@ export class StoreState {
         for (const object of object_list) {
             if (!is_store_object(object))
                 throw new Error("While an array of objects has been passed in, at least one object does not have a store property of type Store");
-            object_map[object.store.get_id()] = object;
+            object_map.set(object.store.get_id(), object);
         }
         if (current_object_map != null) {
             // Check if all of the objects are in the same place
