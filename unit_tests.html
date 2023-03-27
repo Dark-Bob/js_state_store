@@ -11,11 +11,12 @@
         import test_simple_variable from "./tests/test_simple_variable.js"
         import test_reordering from "./tests/test_reordering.js"
         import test_api_subscription_manager from "./tests/test_api_subscription_manager.js"
+        import test_map from "./tests/test_map.js"
 
         async function run_tests() {
             const test_sets = [test_get_set, test_get_set_json, test_subscriptions, test_actions, test_simple_variable,
-                test_reordering, test_api_subscription_manager];
-            // const test_sets = [{test: test_subscriptions.test_subscribe_before_create}];
+                test_reordering, test_map, test_api_subscription_manager];
+            // const test_sets = [{test: test_map.test_map_proxy_insert_order}];
             for (const tests of test_sets) {
                 for (const [name, test_function] of Object.entries(tests)) {
                     console.log(`Testing [${name}]`)

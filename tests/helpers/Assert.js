@@ -5,8 +5,10 @@ export function assert(condition, message=null) {
 }
 
 export function assert_arrays_are_equal(a1, a2, message=null) {
-    if (!are_arrays_equal(a1, a2))
-        throw new Error(message == null ? "ASSERTION FAILED" : `ASSERTION FAILED: ${message}`);
+    if (!are_arrays_equal(a1, a2)) {
+        const comparison_string = `${a1} != ${a2}`;
+        throw new Error(message == null ? `ASSERTION FAILED:  ${comparison_string}` : `ASSERTION FAILED: ${comparison_string}\n${message}`);
+    }
 }
 
 function are_arrays_equal(a1, a2) {

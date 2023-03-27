@@ -8,17 +8,84 @@ export function is_store_object(object) {
     return object != null && typeof object === 'object' && 'store' in object && object.store instanceof StoreState;
 }
 
+
+// Use this proxy handler to be able to use Map like a regular object
+export class MapProxy {
+    get(target, property_name) {
+        if (property_name === 'length')
+            return target.size;
+        if (typeof target[property_name] === 'function') {
+            if (property_name === 'values')
+                return () => Array.from(target[property_name].bind(target)())
+            return target[property_name].bind(target);
+        }
+
+        return target.get(property_name);
+    }
+
+    set(target, property_name, value) {
+        target.set(property_name, value);
+        return true;
+    }
+
+    has(target, property_name) {
+        if (property_name === 'length')
+            return true;
+        return target.has(property_name);
+    }
+
+    defineProperty(target, property, descriptor) {
+        target.set(property, descriptor.value);
+        return true;
+    }
+
+    deleteProperty(target, property_name) {
+        return target.delete(property_name);
+    }
+
+    ownKeys(target) {
+        return Array.from(target.keys());
+    }
+
+    getOwnPropertyDescriptor(target, property_name) {
+        if (target.has(property_name)) {
+            return {
+                value: target.get(property_name),
+                writable: true,
+                enumerable: true,
+                configurable: true,
+            };
+        }
+
+        return undefined;
+    }
+}
+
+Object.values = function (object) {
+    if (object != null && object.prototype !== undefined && object instanceof Proxy) {
+        const target = object[Proxy.target];
+        if (target instanceof Map) {
+            return Array.from(target.values());
+        }
+    }
+
+    return Reflect.ownKeys(object).map(key => object[key]);
+};
+
+Object.entries = function (object) {
+    if (object != null && object.prototype !== undefined && object instanceof Proxy) {
+        const target = object[Proxy.target];
+        if (target instanceof Map) {
+            return Array.from(target.entries());
+        }
+    }
+
+    return Reflect.ownKeys(object).map(key => [key, object[key]]);
+};
+
 export class StoreMap extends Map {
     constructor() {
         super();
-    }
-
-    set_map(key, value) {
-        super.set(key, value)
-    }
-
-    values() {
-        return Object.values(this);
     }
 }
 
@@ -63,7 +130,7 @@ class StoreMapProxy {
         if (StoreMapProxy.proxy_properties.includes(property_name))
              return this[property_name];
         if (property_name === 'length')
-            return target.values().length;
+            return target.length;
         const result = Reflect.get(...arguments);
         if (typeof result === 'function' && ['set_map'].includes(property_name))
             return result.bind(target);
@@ -73,8 +140,8 @@ class StoreMapProxy {
     set(target, property_name, value, receiver) {
         if (property_name === 'subscriptions')
              return this.subscriptions = value;
-        if (!Object.prototype.hasOwnProperty.call(target, property_name))
-            return Reflect.set(...arguments);
+        if (!target.has(property_name))
+            return this.defineProperty(target, property_name, {value: value});
         if (!('store' in value) || !(value.store instanceof StoreState))
             throw new Error(`Cannot set property [${property_name}] to an object that does not contain a [store] property of type [Store].`);
         if (this.length > 0) {
@@ -98,7 +165,7 @@ class StoreMapProxy {
 
     defineProperty(target, property_name, descriptor) {
         const value = descriptor['value'];
-        if (Object.prototype.hasOwnProperty.call(target, property_name))
+        if (target.has(property_name))
             return Reflect.defineProperty(...arguments);
         if (!is_called_from_function('_create_object_map') && this.store.object_subscriptions.length > 0) {
             const values = target.values();
@@ -620,13 +687,12 @@ export class StoreState {
         if (!Array.isArray(object_list))
             throw new Error("Expected an array of objects");
 
-        const object_map = StoreMapProxy.create_from_object(new StoreMap(), path, actions);
+        const object_map = StoreMapProxy.create_from_object(new Proxy(new StoreMap(), new MapProxy()), path, actions);
         if (current_object_map != null)
             object_map.store.object_subscriptions = current_object_map.store.object_subscriptions;
         for (const object of object_list) {
             if (!is_store_object(object))
                 throw new Error("While an array of objects has been passed in, at least one object does not have a store property of type Store");
-            object_map.set_map(object.store.get_id(), object);
             object_map[object.store.get_id()] = object;
         }
         if (current_object_map != null) {
