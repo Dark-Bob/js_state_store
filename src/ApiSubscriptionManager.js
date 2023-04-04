@@ -35,18 +35,12 @@ function subscribe_to_apis(subscriptions) {
             fetch_get_json(url)
                 .then(response => {
                     let object_json;
-                    if (subscription_data['returned_object_has_name']) {
-                        let object_name;
-                        if (subscription_data['returned_object_name'] != null)
-                            object_name = subscription_data['returned_object_name'];
-                        else
-                            object_name = _split_path(store_path)[1] || store_path;
-                        object_json = response[object_name];
+                    if (subscription_data['get_object_from_response_function']) {
+                        object_json = subscription_data['get_object_from_response_function'](response);
                     }
                     else {
-                        object_json = response;
-                        if ('result' in object_json)
-                            delete object_json.result;
+                        const object_name = _split_path(store_path)[1] || store_path;
+                        object_json = response[object_name];
                     }
                     global_store.set_json(store_path, object_json);
                 })
@@ -64,10 +58,10 @@ class ApiSubscriptionManager {
         this.subscriptions = {};
     }
 
-    subscribe(store_path, returned_object_has_name=true, returned_object_name=null, url=null) {
+    subscribe(store_path, get_object_from_response_function=null, url=null) {
         if (store_path in this.subscriptions)
             throw new Error(`Already subscribed to [${store_path}]`);
-        this.subscriptions[store_path] = {returned_object_has_name: returned_object_has_name, returned_object_name: returned_object_name, url: url};
+        this.subscriptions[store_path] = {get_object_from_response_function: get_object_from_response_function, url: url};
         subscribe_to_apis(this.subscriptions);
     }
 
