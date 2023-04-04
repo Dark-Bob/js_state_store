@@ -53,7 +53,7 @@ function subscribe_to_apis(subscriptions) {
 
 class ApiSubscriptionManager {
     constructor() {
-        this.subscriptions = [];
+        this.subscriptions = {};
     }
 
     subscribe(store_path, returned_object_name=null, url=null) {
