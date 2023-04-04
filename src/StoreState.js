@@ -1,4 +1,4 @@
-
+import deep_equals from "./DeepEquals.js";
 
 function is_called_from_function(function_name) {
     return new Error().stack.includes(function_name);
@@ -870,7 +870,7 @@ export class StoreState {
                     value.update_from_json(object_json[key]);
                 else
                     value.store.update_from_json(object_json[key]);
-            } else if (object_json[key] !== value)
+            } else if (!deep_equals(object_json[key], value))
                 this.set(key, object_json[key]);
         }
     }
