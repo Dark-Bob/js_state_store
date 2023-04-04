@@ -48,7 +48,7 @@ function subscribe_to_apis(subscriptions) {
                         if ('result' in object_json)
                             delete object_json.result;
                     }
-                    global_store.set_json(store_path, new_list);
+                    global_store.set_json(store_path, object_json);
                 })
                 .catch(error => console.error(error));
         }
