@@ -75,7 +75,7 @@ const tests = {
                 index += 1;
         });
 
-        api_subscription_manager.subscribe('locations');
+        api_subscription_manager.subscribe({store_path: 'locations'});
         const api_poll_frequency = 2000;
         await new Promise((resolve, reject) => setTimeout(resolve, test_request_data.length * api_poll_frequency + 200));
         api_subscription_manager.unsubscribe('locations');
