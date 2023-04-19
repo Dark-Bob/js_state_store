@@ -415,6 +415,8 @@ export class StoreState {
         const path_parts = this._split_path(path, false);
         const is_global_store = path === '';
         this.object_name = path_parts[1];
+        if (object == null)
+            object = object = {store: this}
         this.object = object;
         this.path = path;
         if (path_parts[0] != null) {
@@ -572,8 +574,12 @@ export class StoreState {
             else if (Array.isArray(object) && object.length > 0 && is_store_object(object))
                 return this.set_object_map(path_parts[0], object, this.dom_mapping[path_parts[0]], this.state[path_parts[0]].actions);
             // Make sure we can trigger subscriptions. Alternatively could just loop through the subscriptions
-            if ('object' in this && this.object != null)
-                return this.object[path_parts[0]] = object;
+            if ('object' in this && this.object != null) {
+                if (path_parts[0] in this.object || this.object instanceof StoreMap)
+                    return this.object[path_parts[0]] = object;
+                else
+                    this._set_member(path_parts[0], object);
+            }
             return this.state[path_parts[0]] = object;
         }
 
@@ -635,7 +641,7 @@ export class StoreState {
         return value;
     }
 
-    _set_member(object, property_name, value, query_string=null, actions={}, on_change_callback=null, create_new_value=this.pass_through, transform_current_value=this.pass_through) {
+    _set_member(property_name, value, query_string=null, actions={}, on_change_callback=null, create_new_value=this.pass_through, transform_current_value=this.pass_through) {
         this.state[property_name] = value;
         this.actions[property_name] = actions;
         this.property_subscriptions[property_name] = [];
@@ -643,47 +649,51 @@ export class StoreState {
             this.property_subscriptions[property_name].push(on_change_callback);
         if (query_string != null)
             this.dom_mapping[property_name] = query_string;
-        if (object != null) {
-            if (!is_store_object(object))
-                throw new Error("The object needs to have a store property of type Store");
-            Object.defineProperty(object, property_name, {
-                // This now refers to the this.object
-                get: function () {
-                    return this.store.state[property_name];
-                },
-                set: function (new_value) {
-                    if (this.store.object_subscriptions.length > 0 || this.store.property_subscriptions[property_name].length > 0) {
-                        const transformed_current_value = transform_current_value(this.store.state[property_name]);
-                        for (const callback of this.store.object_subscriptions) {
-                            try {
-                                callback(this, property_name, transformed_current_value, new_value, 'change');
-                            } catch (exception)
-                            {
-                                console.error(exception, exception.stack);
-                            }
-                        }
-                        for (const callback of this.store.property_subscriptions[property_name]) {
-                            try {
-                                callback(this, property_name, transformed_current_value, new_value, 'change');
-                            } catch (exception)
-                            {
-                                console.error(exception, exception.stack);
-                            }
+
+        if (!is_store_object(this.object))
+            throw new Error("The object needs to have a store property of type Store");
+        Object.defineProperty(this.object, property_name, {
+            configurable: true,
+            // This now refers to the this.object
+            get: function () {
+                return this.store.state[property_name];
+            },
+            set: function (new_value) {
+                if (this.store.object_subscriptions.length > 0 || this.store.property_subscriptions[property_name].length > 0) {
+                    const transformed_current_value = transform_current_value(this.store.state[property_name]);
+                    for (const callback of this.store.object_subscriptions) {
+                        try {
+                            callback(this, property_name, transformed_current_value, new_value, 'change');
+                        } catch (exception)
+                        {
+                            console.error(exception, exception.stack);
                         }
                     }
-                    this.store.state[property_name] = create_new_value(new_value, this.store.state[property_name], `${this.store.path}/${property_name}`, property_name, actions);
-                    this.store._update_dom(property_name);
+                    for (const callback of this.store.property_subscriptions[property_name]) {
+                        try {
+                            callback(this, property_name, transformed_current_value, new_value, 'change');
+                        } catch (exception)
+                        {
+                            console.error(exception, exception.stack);
+                        }
+                    }
                 }
-            });
-        }
+                this.store.state[property_name] = create_new_value(new_value, this.store.state[property_name], `${this.store.path}/${property_name}`, property_name, actions);
+                if ('_update_dom' in this.store)
+                    this.store._update_dom(property_name);
+            }
+        });
     }
 
-    _set_object_map(object, property_name, object_list, query_string=null, actions={}, on_change_callback=null) {
+    _set_object_map(property_name, object_list, query_string=null, actions={}, on_change_callback=null) {
         const object_map = this._create_object_map(object_list, null, `${this.path}/${property_name}`, property_name, actions);
-        this._set_member(object, property_name, object_map, query_string, actions, on_change_callback, this._create_object_map, (current_value) => current_value.values())
+        this._set_member(property_name, object_map, query_string, actions, on_change_callback, this._create_object_map, (current_value) => is_store_object(current_value) ? current_value.values() : current_value)
     }
 
     _create_object_map(object_list, current_object_map=null, path, property_name, actions) {
+        if (object_list == undefined || object_list == null)
+            return object_list;
+
         if (!Array.isArray(object_list))
             throw new Error("Expected an array of objects");
 
@@ -752,7 +762,7 @@ export class StoreState {
     }
 
     set_object_map(property_name, object_list, query_string=null, actions={}, on_change_callback=null) {
-        this._set_object_map(null, property_name, object_list, query_string, actions, on_change_callback);
+        this._set_object_map(property_name, object_list, query_string, actions, on_change_callback);
     }
 
     subscribe(path, callback) {

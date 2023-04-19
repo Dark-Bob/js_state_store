@@ -11,7 +11,7 @@ export default class Store extends StoreState {
     set_id(id_property_name, value, query_string=null) {
         if (value.toString() !== this.object_name)
             throw new Error(`Object id [${value}] is different to the path [${this.object_name}]`)
-        this._set_member(this.object, id_property_name, value, query_string);
+        this._set_member(id_property_name, value, query_string);
         this.id_property_name = id_property_name;
     }
 
@@ -34,11 +34,11 @@ export default class Store extends StoreState {
     }
 
     set_member(property_name, value, query_string=null, on_change_callback=null) {
-        this._set_member(this.object, property_name, value, query_string, {}, on_change_callback);
+        this._set_member(property_name, value, query_string, {}, on_change_callback);
     }
 
     set_member_map(property_name, value, query_string=null, actions={}, on_change_callback=null) {
-        this._set_object_map(this.object, property_name, value, query_string, actions, on_change_callback);
+        this._set_object_map(property_name, value, query_string, actions, on_change_callback);
     }
 
     set_member_array(property_name, array, query_string=null, actions={}, on_change_callback=null) {
@@ -47,7 +47,7 @@ export default class Store extends StoreState {
         const array_proxy = StoreArrayProxy.create_from_array(array, null, `${this.path}/${property_name}`, property_name, actions);
         if (on_change_callback != null)
             array_proxy.subscribe(on_change_callback)
-        this._set_member(this.object, property_name, array_proxy, query_string, {}, on_change_callback, StoreArrayProxy.create_from_array, Array.from);
+        this._set_member(property_name, array_proxy, query_string, {}, on_change_callback, StoreArrayProxy.create_from_array, Array.from);
     }
 
     _update_dom(property_name) {

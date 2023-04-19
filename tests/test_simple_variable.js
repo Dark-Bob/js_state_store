@@ -8,7 +8,8 @@ const tests = {
         const store = populate_store();
 
         store.set('selected_id', 1);
-        assert(store.get('selected_id') === 1);
+        const selected_id = store.get('selected_id')
+        assert(selected_id === 1);
     }
 }
 
