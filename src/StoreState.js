@@ -868,7 +868,7 @@ export class StoreState {
     to_json() {
         const json = {};
         for (const [key, value] of Object.entries(this.state)) {
-            if (typeof value === 'object' && 'to_json' in value)
+            if (value != null && typeof value === 'object' && 'to_json' in value)
                 json[key] = value.to_json();
             else if (is_store_object(value))
                 json[key] = value.store.to_json();
