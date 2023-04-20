@@ -601,6 +601,7 @@ export class StoreState {
     }
 
     set_json(path, object_json) {
+        let result;
         const path_parts = this._split_path(path);
         if (path_parts[1] == null) {
             if (typeof object_json !== "object") {
@@ -610,8 +611,10 @@ export class StoreState {
                 return this.state[path_parts[0]] = object_json;
             }
             if ('update_from_json' in this.state[path_parts[0]])
-                return this.state[path_parts[0]].update_from_json(object_json);
-            return this.object[path_parts[0]].store.update_from_json(object_json);
+                result = this.state[path_parts[0]].update_from_json(object_json);
+            else
+                result = this.object[path_parts[0]].store.update_from_json(object_json);
+            return result;
         }
 
         if (this.state[path_parts[0]] instanceof StoreMap) {
@@ -621,17 +624,23 @@ export class StoreState {
                     const [create_from_json_function, id_property_name] = global_store.get_create_from_json_function(`${this.get_object_path()}/${path_parts[0]}`);
                     const object = create_from_json_function(object_json, `${this.get_object_path()}/${path}`);
                     return this.state[path_parts[0]].store.set(next_path_parts[0], object);
-                } else if ('update_from_json' in this.state[path_parts[0]][next_path_parts[0]])
-                    return this.state[path_parts[0]][next_path_parts[0]].update_from_json(object_json);
-                return this.state[path_parts[0]][next_path_parts[0]].store.update_from_json(object_json);
+                } else if ('update_from_json' in this.state[path_parts[0]][next_path_parts[0]]) {
+                    result = this.state[path_parts[0]][next_path_parts[0]].update_from_json(object_json);
+                    return result;
+                }
+                result = this.state[path_parts[0]][next_path_parts[0]].store.update_from_json(object_json);
+                return result;
             }
             else {
-                if (next_path_parts[0] in this.state[path_parts[0]])
-                    return this.state[path_parts[0]][next_path_parts[0]].store.set_json(next_path_parts[1], object_json);
+                if (next_path_parts[0] in this.state[path_parts[0]]) {
+                    result = this.state[path_parts[0]][next_path_parts[0]].store.set_json(next_path_parts[1], object_json);
+                    return result;
+                }
             }
         }
         else if ('store' in this.state[path_parts[0]] && this.state[path_parts[0]].store instanceof StoreState) {
-            return this.state[path_parts[0]].store.set_json(path_parts[1], object_json);
+            result = this.state[path_parts[0]].store.set_json(path_parts[1], object_json);
+            return result;
         }
 
         throw new Error(`Path part [${path}] is not valid`);
