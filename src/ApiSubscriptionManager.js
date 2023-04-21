@@ -27,6 +27,7 @@ function subscription_handler(interval_data) {
     const url = subscription_data['url'] || global_store.get_url(store_path);
     if (url == null) {
         console.warn(`Cannot fetch [${store_path}], internal state is not set for this path in the global store.`);
+        interval_data['interval_call_happening'] = false;
         return;
     }
 
