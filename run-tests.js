@@ -6,6 +6,7 @@ try {
   ({ default: puppeteer } = await import('puppeteer'));
 } catch (e) {
   console.log('Required modules not found, skipping tests');
+  console.log('Install dev dependencies with "npm install" to enable tests.');
   process.exit(0);
 }
 
@@ -26,6 +27,11 @@ async function run() {
 
   await page.goto('http://localhost:8080/unit_tests.html');
   await page.waitForFunction(() => window.tests_done === true, { timeout: 0 });
+
+  const pageText = await page.evaluate(() => document.body.innerText);
+  console.log('\n--- Test Page Output ---');
+  console.log(pageText.trim());
+  console.log('--- End Test Page Output ---\n');
 
   await browser.close();
   server.close();
