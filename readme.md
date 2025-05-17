@@ -165,7 +165,7 @@ class Something extends HTMLElement {
     }
     
     connectedCallback() {
-        // We can subscirbe to our store without the full path
+        // We can subscribe to our store without the full path
         this.store.subscribe('cars', this.on_change);
     }
     
@@ -187,7 +187,7 @@ class CarLogo extends HTMLElement {
         this.car_brand_store_path = car_brand_store_path;
         this.logos = {
             'Ferrari': 'ferrari.jpg',
-            'Lomborghini': 'lambo.png',
+            'Lamborghini': 'lambo.png',
         }
         this.on_change = this.on_change.bind(this);
     }
@@ -205,7 +205,7 @@ class CarLogo extends HTMLElement {
             this.image.src = this.logos[global_store.get(this.car_brand_store_path)];
         }
         
-        // We can subscirbe to our store without the full path
+        // We can subscribe to our store without the full path
         this.store.subscribe(this.car_brand_store_path, this.on_change);
     }
     
@@ -422,7 +422,7 @@ import global_store from "https://cdn.jsdelivr.net/gh/Dark-Bob/js_state_store@c9
 import Store from "https://cdn.jsdelivr.net/gh/Dark-Bob/js_state_store@c9b3060/src/Store.js";
 import {api_actions_object, api_actions_map} from "https://cdn.jsdelivr.net/gh/Dark-Bob/js_state_store@c9b3060/src/ApiActions.js";
 ```
-The bit after the @ symbol the git commit hash, so ue that to select 
+The bit after the @ symbol the git commit hash, so use that to select
 your version of the store.
 
 If you're using Webpack, then you might need to enable external 
