@@ -33,7 +33,7 @@
             }
         }
 
-        run_tests();
+        run_tests().then(() => { window.tests_done = true; });
 
     </script>
 </head>

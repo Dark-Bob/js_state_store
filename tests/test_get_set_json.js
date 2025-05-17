@@ -7,6 +7,12 @@ import global_store from "../src/GlobalStore.js";
 
 const tests = {
     test_get() {
+        populate_store();
+
+        assert(global_store.get_json('locations').length === 2);
+        assert(global_store.get_json('locations/Wandsworth/description') === 'Cheap cars');
+        assert(global_store.get_json('locations/Wandsworth/cars/0/brand') === 'Ferrari');
+        assert(global_store.get_json('locations/Wandsworth/cars/0/engine/type') === 'twin-turbo V8');
     },
     test_set_json() {
         populate_store();
