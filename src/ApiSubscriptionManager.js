@@ -1,4 +1,5 @@
 import global_store from "./GlobalStore.js";
+import {fetch_get_json} from "./Fetch.js";
 
 
 const subscription_interval_map = {}
