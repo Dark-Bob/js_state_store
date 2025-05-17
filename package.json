@@ -1,0 +1,15 @@
+{
+  "name": "js_state_store",
+  "version": "1.0.0",
+  "description": "## Why did I write another state store?",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
