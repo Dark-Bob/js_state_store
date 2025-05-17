@@ -9,7 +9,7 @@ function _split_path(path) {
         path = path.slice(1);
     if (path.endsWith('/'))
         path = path.slice(0, -1);
-    // See if it's made up of more than on section
+    // See if it's made up of more than one section
     const first_part_index = path.lastIndexOf('/');
     if (first_part_index === -1)
         return [path, null];
